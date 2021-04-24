@@ -191,8 +191,9 @@ class BTLogger:
         yHandler.setLevel=(logging.INFO) #c no effect 
         if self.filter_stdout != None : yHandler.addFilter( self.filter_stdout )
 
-        self.log_stream=StringIO()
-        yHandler1=logging.StreamHandler(self.log_stream)          
+        self.log_StringIO=StringIO()
+
+        yHandler1=logging.StreamHandler(self.log_StringIO)          
         log_format='+%(funcName)s\%(lineno)s|%(levelname)s: %(message)s [%(filename)s %(asctime)s]'
         dt_format= '%m/%d:%I:%M'#  %p'
         yHandler1.setFormatter(logging.Formatter(log_format, datefmt=dt_format))   
@@ -216,6 +217,10 @@ class BTLogger:
         # start the very first log with datetime
         logging.info('logging started at:' + datetime.datetime.now().strftime('%x'))
 
+    def FlushStringIO(self):
+        self.log_StringIO.seek(0)
+        self.log_StringIO.truncate(0)
+        
         
 
 #lgi=lambda y: logging.info(y)

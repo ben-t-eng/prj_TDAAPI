@@ -11,7 +11,9 @@ import numpy as np
 import datetime
 import a_Stock_IF
 import logging
-from a_utils import lgc,lge,lgi,lgw
+from logging import debug as lgd
+from logging import info as lgi
+from logging import error as lge
 
 ###################################
 class Stock:
@@ -60,7 +62,7 @@ class Stock:
 
     def GetHist(self):
     # get market data
-        lgc("get symbol market data, ok")
+        lgd("get symbol market data, ok")
 
         #print ('end date', yEDate)
         #print ('start Date', ySDate)
@@ -70,21 +72,21 @@ class Stock:
         self.HistDF= yDF2.iloc[:, 1:] #takes out the firstcolumn of serial numbers, 
 
         
-        lgc( "got quote update, " + str(type(self.HistDF)) + str(self.HistDF.shape)) 
+        lgd( "got quote update, " + str(type(self.HistDF)) + str(self.HistDF.shape)) 
 
         self.UpdateTA()
 
         self.SaveHist()
 
     def UpdateTA(self):
-        lgc('UpdateTA()')
+        lgd('UpdateTA()')
         
         #
 
         SMAPeriod=self.SMADays
         if SMAPeriod > 100 or SMAPeriod < 1 :
             SMAPeriod =10 
-            lgc("SMADays is out of range of 1 to 100, reset to 10; ") 
+            lgi("SMADays is out of range of 1 to 100, reset to 10; ") 
 
         #https://www.geeksforgeeks.org/adding-new-column-to-existing-dataframe-in-pandas/
         ySMA=talib.SMA(self.HistDF['close'].values, timeperiod=SMAPeriod)
@@ -101,28 +103,28 @@ class Stock:
         self.SMA= self.HistDF.iloc[-1,5] 
 
 
-        lgc("updated price=" + str(self.Price) +' volume=' +str(self.Volume) + ' date=' + str(self.PriceDate) + ' SMA=' + str(self.SMA))
+        lgi("updated price=" + str(self.Price) +' volume=' +str(self.Volume) + ' date=' + str(self.PriceDate) + ' SMA=' + str(self.SMA))
 
         self.SMA=self.HistDF.iloc[-1,5]  # column 5 is sma 
         if  self.SMAState==1 and self.SMA >= self.Price:
             self.SMAAlert = -1
             self.SMAState =0  
             
-            lgc( "SMA Alert: price dropped below SMA")
+            lgi( "SMA Alert: price dropped below SMA")
 
         elif self.SMAState==0 and self.SMA < self.Price:
             self.SMAAlert = 1
             self.SMAState =1 
             
-            lgc("SMA Alert: price rose above SMA"+'; ')
+            lgi("SMA Alert: price rose above SMA"+'; ')
         else:
             self.SMAAlert = 0 
             self.Comment=self.Comment + "SMA Alert reset since no change since last update" +'; ' 
             self.SMADate=self.PriceDate
-            lgc("updated price=" + str(self.Price) +' volume=' +str(self.Volume) + 'SMAdate=' + str(self.SMADate) + ' SMA=' + str(self.SMA) )
+            lgi("updated price=" + str(self.Price) +' volume=' +str(self.Volume) + 'SMAdate=' + str(self.SMADate) + ' SMA=' + str(self.SMA) )
 
     def SaveHist(self):
-        #lgc('SaveHist()')
+        #lgi('SaveHist()')
 
         cdir=self.Symbol
         pdir=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
@@ -130,7 +132,7 @@ class Stock:
 
         path=a_utils.DF2CSV(self.HistDF, path, self.Symbol, '')
 
-        lgc("SaveHist() path:  " + str(path) )
+        lgi("SaveHist() path:  " + str(path) )
 
 
 

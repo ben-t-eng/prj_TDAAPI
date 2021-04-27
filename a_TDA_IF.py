@@ -27,7 +27,7 @@ def TDA_Price_Hist ( APIK='', PlayLoad='', APIURL='', Symbol='', StartDTStamp=0,
 
 
      if EndDTStamp==0:
-          EndDTStamp=datetime.datetime.today().timestamp()
+          EndDTStamp=round(datetime.datetime.today().timestamp())
 
      StartDTStamp =StartDTStamp*1000
      EndDTStamp =EndDTStamp*1000

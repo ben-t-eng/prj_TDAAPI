@@ -125,7 +125,7 @@ def DateTime2UTC(DateTime):
     localDateTime=DateTime.astimezone()  # add tz info to DT object
     localTZinfo=localDateTime.tzinfo        # get tzinfo obj 
     
-    #lgd('DateTime2UTC(): Local timezone name===', localTZinfo.tzname(localDateTime) )
+    lgd('DateTime2UTC(): Local timezone name===', localTZinfo.tzname(localDateTime) )
 
     TimeDelta=localTZinfo.utcoffset(localDateTime)
  
@@ -136,12 +136,12 @@ def DateTime2UTC(DateTime):
 
 
 #%%
-#from datetime import datetime; some error 
+#from datetime import datetime
 def TDAepoch2DT(TDA_TS ):
-    # in ms
-    ySTARTDATE_TS=315561600000   #1980/1/1
+    #! in ms
+    ySTARTDATE_TS=315561600000    #1980/1/1
 
-    if round(TDA_TS) > round(ySTARTDATE_TS):
+    if (TDA_TS >= ySTARTDATE_TS).all():
         yDT=datetime.datetime.fromtimestamp(TDA_TS/1000)
     else :
         yDT=datetime.datetime.fromtimestamp(ySTARTDATE_TS/1000)
@@ -175,7 +175,7 @@ class LevelFilter(logging.Filter):
 
 class FileFilter(logging.Filter):
     #works 
-    def __init__(self,files=('font_manager.py',) ):
+    def __init__(self,files=('font_manager.py') ):
         self.files=files
 
     def filter(self, record):
@@ -210,7 +210,7 @@ class BTLogger:
 
         yHandler=logging.StreamHandler(sys.stdout) #stdout, so cell output is white  #if stderr, so cell output is red   
         log_format='+%(funcName)s\%(lineno)s|%(levelname)s: %(message)s [%(filename)s %(asctime)s]'
-        dt_format= '%m/%d:%I:%M %S'#  %p'
+        dt_format= '%m/%d:%I:%M'#  %p'
         yHandler.setFormatter(logging.Formatter(log_format, datefmt=dt_format))
         
         yHandler.setLevel=(logging.INFO) #c no effect 
@@ -222,8 +222,8 @@ class BTLogger:
         self.log_StringIO=StringIO()
 
         yHandler1=logging.StreamHandler(self.log_StringIO)          
-        log_format='~%(funcName)s\%(lineno)s|%(levelname)s: %(message)s [%(filename)s %(asctime)s]'
-        dt_format= '%m/%d:%I:%M %S'#  %p'
+        log_format='+%(funcName)s\%(lineno)s|%(levelname)s: %(message)s [%(filename)s %(asctime)s]'
+        dt_format= '%m/%d:%I:%M'#  %p'
         yHandler1.setFormatter(logging.Formatter(log_format, datefmt=dt_format))   
         
         yHandler1.setLevel=(logging.INFO) #c no effect 

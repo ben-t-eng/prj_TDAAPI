@@ -17,3 +17,6 @@ Archive/a_MatP_Fin.py
 Archive/a_TA1_Plt.py
 Archive/a_TDA_IF.py
 Archive/a_utils.py
+TA_Lib-0.4.24-cp38-cp38-win_amd64.whl
+*.pyc
+Archive/*

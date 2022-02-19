@@ -57,7 +57,8 @@ class Stock:
 
         self.Comment='' # for collecting all changes, warnings
 
-        tPlt_Path=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
+        #tPlt_Path=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
+        tPlt_Path=r'C:\BTFiles\btgithub1b\TDAAPI\HistoricalData'
         self.TA1={ 'plt_path':tPlt_Path, 
                     'Strategies': {
                                 'SMA':{ 'plt_loc':[]  ,'SMAPeriod':10   },
@@ -152,7 +153,9 @@ class Stock:
         #lgi('SaveHist()')
 
         cdir=self.Symbol
-        pdir=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
+        #pdir=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
+        pdir=r'C:\BTFiles\btgithub1b\TDAAPI\HistoricalData'
+        
         path= a_utils.addDir(pdir, cdir)
 
         path=a_utils.DF2CSV(self.HistDF, path, self.Symbol, '')

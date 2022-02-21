@@ -12,7 +12,7 @@ __pycache__/a_OL_IF.cpython-38.pyc
 __pycache__/a_Stock_IF.cpython-38.pyc
 __pycache__/a_TDA_IF.cpython-38.pyc
 __pycache__/a_utils.cpython-38.pyc
-Archive/a_MatP_Fin_04_24pm.py
+#Archive/a_MatP_Fin_04_24pm.py
 Archive/a_MatP_Fin.py
 Archive/a_TA1_Plt.py
 Archive/a_TDA_IF.py
@@ -20,3 +20,4 @@ Archive/a_utils.py
 TA_Lib-0.4.24-cp38-cp38-win_amd64.whl
 *.pyc
 Archive/*
+__pycache__/*

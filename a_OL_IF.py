@@ -167,7 +167,8 @@ class OLI_Stock :
             yRng.Collapse(Direction=C.wdCollapseStart)
             yRng.Move(Unit=C.wdCell, Count=1 )
             
-            file=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug\GOOG\GOOG_SMA_04_25_21.png'
+           
+            # file=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug\GOOG\GOOG_SMA_04_25_21.png'
            
 
             self.InsertImage(yRng)
@@ -184,7 +185,7 @@ class OLI_Stock :
             
             #yInsp.Close(C.olSave) #nw, no need 
             #self.OLI.Save()   # to call in main loop
-            lgd("OLIUpdate closed at finally: ")
+            lgd("OLIUpdate finally closed at: ")
 
 
     def SetOLIUsrProp(self, Fieldnm, Value, FieldType=1):

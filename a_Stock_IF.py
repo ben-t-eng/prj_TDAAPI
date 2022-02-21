@@ -2,6 +2,8 @@
 ## imports
 ##############
 import sys
+
+from sqlalchemy import column
 sys.path.append ('..\TDAAPI')
 import a_TDA_IF 
 import a_utils
@@ -14,6 +16,7 @@ import logging
 from logging import debug as lgd
 from logging import info as lgi
 from logging import error as lge
+import a_Settings
 
 ###################################
 class Stock:
@@ -58,8 +61,9 @@ class Stock:
         self.Comment='' # for collecting all changes, warnings
 
         #tPlt_Path=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
-        tPlt_Path=r'C:\BTFiles\btgithub1b\TDAAPI\HistoricalData'
-        self.TA1={ 'plt_path':tPlt_Path, 
+        #tPlt_Path=r'C:\BTFiles\btgithub1b\TDAAPI\HistoricalData'
+        
+        self.TA1={ 'plt_path':a_Settings.URL_plt_path, 
                     'Strategies': {
                                 'SMA':{ 'plt_loc':[]  ,'SMAPeriod':10   },
                                 'RSI': { 'plt_loc':[]  ,'SMAPeriod':10   }, 
@@ -67,14 +71,14 @@ class Stock:
                                 'BB':  { 'plt_loc':[]  ,'SMAPeriod':10   }   
                                 }
                 }
-        self.CSV_Path=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
+        self.CSV_Path=r""
         
 
         lgi('Stock initialized')
 
     def GetHist(self, Test=0):
     # get market data
-        lgd("get symbol market data, ok")
+        #lgd("get symbol market data, ok")
 
      
         ySDate=a_utils.epoch_from_today( Yr=1, Mo=0, Day=0) 
@@ -82,12 +86,19 @@ class Stock:
         ###################self.HistDF=a_TDA_IF.TDA_Price_Hist (Symbol=self.Symbol, StartDTStamp=self.HistStartDate, EndDTStamp=self.HistEndDate )
         #
         if Test==1 :
-            yDF2=pd.read_csv(r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug\GOOG_TDA_raw.csv')
+            ##yDF2=pd.read_csv(r"C:\BTFiles\btgithub1b\TDAAPI\HistoricalData\Debug\GOOG_2022_02_20-21_03.csv")
+            yDF2=pd.read_csv(a_Settings.URL_debug_data_file)
+            lgi("--> debug data file used <--" + a_Settings.URL_debug_data_file + "; instead of data from web e.g. TDA and etc." ) 
         else:
             yDF2=a_TDA_IF.TDA_Price_Hist ( Symbol=self.Symbol, StartDTStamp=ySDate, EndDTStamp=0 )
         
-        yDF2['Date']= pd.to_datetime(yDF2['datetime'], unit='ms') 
+             
+        yDF2['Date']= pd.to_datetime(yDF2['datetime'], unit='ms')
         yDF2.set_index(keys='Date', inplace=True)
+
+        #https://www.statology.org/pandas-convert-column-to-int/#:~:text=You%20can%20use%20the%20following%20syntax%20to%20convert,Integer%20Suppose%20we%20have%20the%20following%20pandas%20DataFrame%3A
+        yDF2['datetime'] = yDF2['datetime'].astype('int64')
+
         self.HistDF=yDF2
         #no need and not safe, self.HistDF= yDF2.iloc[:, 1:] #takes out the firstcolumn of serial numbers, 
 
@@ -116,8 +127,18 @@ class Stock:
         ySMA=talib.SMA(self.HistDF['close'].values, timeperiod=SMAPeriod)
 
         # df1["SMA"]=ySMA ##works   
-        self.HistDF.insert(5,"SMA1",  ySMA, True) #works too 
+        # need to check if SMA1 already exists , if so can;t add column of same name 2022feb19
+        for col in self.HistDF.columns:
+            if col == "SMA1" :
+                colnm ="SMA-" + datetime.datetime.now().strftime("%m-%d-%Y-%H-%M-%S")
+                self.HistDF.rename(columns={"SMA1": colnm }, inplace=True)
+
+        #https://www.geeksforgeeks.org/adding-new-column-to-existing-dataframe-in-pandas/
+        self.HistDF.insert(5,"SMA1",  ySMA ) #works too 
         
+        #debugging 20220220
+        a_utils.DF2CSV(self.HistDF, r"C:\BTFiles\btgithub1b\TDAAPI\HistoricalData\Debug", self.Symbol, '')
+        lgd("debugging datafile same date issue ")
         # other new value for OLI fields
         # find the lastest data
 
@@ -130,7 +151,8 @@ class Stock:
         #lgi(" ppp updated price=" + str(self.Price) +' volume=' +str(self.Volume) + 
         #    ' date=' + str(self.PriceDate) + ' SMA=' + str(self.SMA))
     
-        self.SMA=self.HistDF['SMA1'][-1]  # column 5 is sma 
+        test1 = self.HistDF['SMA1']
+        self.SMA=self.HistDF['SMA1'][-1]  # column 5 is sma , get this latest SMA value to stock object
         if  round(self.SMAState)==1 and float(self.SMA) >= float(self.Price):
             self.SMAAlert = -1
             self.SMAState =0  
@@ -154,7 +176,7 @@ class Stock:
 
         cdir=self.Symbol
         #pdir=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
-        pdir=r'C:\BTFiles\btgithub1b\TDAAPI\HistoricalData'
+        pdir=a_Settings.URL_CVS_file
         
         path= a_utils.addDir(pdir, cdir)
 

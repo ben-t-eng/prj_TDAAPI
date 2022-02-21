@@ -55,11 +55,15 @@ import numpy as np
 import pandas as pd
 
 
+
 def DF2CSV(PD_DF, path, filenm, tmstr=''):
     # add time string to filename    
     if tmstr=='':
-        tmstr=datetime.datetime.now().strftime("%x")
-        tmstr=tmstr.replace('/','_')
+        # colnm ="SMA-" + datetime.datetime.now().strftime("%m-%d-%Y-%H-%M-%S")
+        ##tmstr=datetime.datetime.now().strftime("%x")
+        ##tmstr=tmstr.replace('/','_')
+        tmstr=datetime.datetime.now().strftime("%Y_%m_%d-%H_%M")
+
     filenm1=filenm + '_' + tmstr + '.csv'
     path=os.path.join(path, filenm1)
     try:
@@ -74,8 +78,9 @@ def DF2CSV(PD_DF, path, filenm, tmstr=''):
 
 def FilePath(Path, FileNm, TimeString='', Suffix='txt'):
     if TimeString=='':
-        TimeString=datetime.datetime.now().strftime("%x")
-        TimeString=TimeString.replace('/','_')
+        ##TimeString=datetime.datetime.now().strftime("%x")
+        ##TimeString=TimeString.replace('/','_')
+        TimeString=datetime.datetime.now().strftime("%Y_%m_%d-%H_%M")
     filenm1=FileNm + '_' + TimeString + Suffix
     yPath=os.path.join(Path, filenm1)
 
@@ -209,7 +214,8 @@ class BTLogger:
         #logging.basicConfig(format='%(asctime)s | %(levelname)s: %(message)s', level=logging.NOTSET)
 
         yHandler=logging.StreamHandler(sys.stdout) #stdout, so cell output is white  #if stderr, so cell output is red   
-        log_format='+%(funcName)s\%(lineno)s|%(levelname)s: %(message)s [%(filename)s %(asctime)s]'
+        ##log_format='+%(funcName)s\%(lineno)s|%(levelname)s: %(message)s [%(filename)s %(asctime)s]'
+        log_format='>%(levelname)s[%(filename)s[%(lineno)s[%(funcName)s[ %(message)s [%(asctime)s'
         dt_format= '%m/%d:%I:%M %S'#  %p'
         yHandler.setFormatter(logging.Formatter(log_format, datefmt=dt_format))
         
@@ -222,7 +228,8 @@ class BTLogger:
         self.log_StringIO=StringIO()
 
         yHandler1=logging.StreamHandler(self.log_StringIO)          
-        log_format='~%(funcName)s\%(lineno)s|%(levelname)s: %(message)s [%(filename)s %(asctime)s]'
+        ##log_format='~%(funcName)s\%(lineno)s|%(levelname)s: %(message)s [%(filename)s %(asctime)s]'
+        log_format='>>%(levelname)s[%(filename)s[%(lineno)s[%(funcName)s[%(message)s [%(asctime)s'
         dt_format= '%m/%d:%I:%M %S'#  %p'
         yHandler1.setFormatter(logging.Formatter(log_format, datefmt=dt_format))   
         

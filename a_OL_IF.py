@@ -112,7 +112,7 @@ class OLI_Stock :
 
 
 
-    def UpdateOLI(self):
+    def UpdateOLI(self, yMsg=''):
         try:
             self.UpdateOLIFields()
             
@@ -145,7 +145,7 @@ class OLI_Stock :
             yWDoc.Tables(yWDoc.Tables.Count).ID = 123
 
             #first cell with time and date 
-            yTString=datetime.datetime.now().strftime('%x;  %X')
+            yTString=datetime.datetime.now().strftime('%x;  %X') + yMsg
 
             yRng =yWDoc.Characters(1)
             yRng.InsertBefore( yTString )
@@ -230,7 +230,7 @@ class OLI_Stock :
                         lgd(' Str='+ yStrategy)
                         for file in self.Stock.TA1['Strategies'][yStrategy]['plt_loc']:
                             
-                            file=file+'.png'
+                            ##file=file+'.png'
                             lgd( 'plt file ='+ str(file))
                             
                            # yRng.Collapse(Direction=C.wdCollapseStart)

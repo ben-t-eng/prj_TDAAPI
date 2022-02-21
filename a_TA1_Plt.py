@@ -347,9 +347,10 @@ class TA1_Plt:
                 yPath= a_utils.addDir(yTA1.container.TA1['plt_path'], yTA1.symbol)
                 yPath= a_utils.FilePath(Path=yPath, FileNm=filenm, TimeString='', Suffix='')
                 plot.savefig(yPath)
+                yPathSaved=yPath+'.png'
                
                 ### dictionary  yTA1.container.TA1 ---------- 
-                yTA1.container.TA1['Strategies'][strategy]['plt_loc'].append(yPath)
+                yTA1.container.TA1['Strategies'][strategy]['plt_loc'].append(yPathSaved)
                 lgi("plt saved at:" + str(yPath) ) 
             except:
                 lge('plt not saved to' + str(yPath))

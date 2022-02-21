@@ -65,13 +65,14 @@ class Stock:
         
         self.TA1={ 'plt_path':a_Settings.URL_plt_path, 
                     'Strategies': {
-                                'SMA':{ 'plt_loc':[]  ,'SMAPeriod':10   },
+                                'SMA':{ 'plt_loc':[]   ,'SMAPeriod':10   },
                                 'RSI': { 'plt_loc':[]  ,'SMAPeriod':10   }, 
                                 'MACD':{ 'plt_loc':[]  ,'SMAPeriod':10   }, 
-                                'BB':  { 'plt_loc':[]  ,'SMAPeriod':10   }   
+                                'BB':  { 'plt_loc':[]  ,'SMAPeriod':10   },
+                                'FinViz':{ 'plt_loc':[],'SMAPeriod':10   }   
                                 }
                 }
-        self.CSV_Path=r""
+        self.CSV_Path=a_Settings.URL_CVS_file
         
 
         lgi('Stock initialized')
@@ -137,8 +138,9 @@ class Stock:
         self.HistDF.insert(5,"SMA1",  ySMA ) #works too 
         
         #debugging 20220220
-        a_utils.DF2CSV(self.HistDF, r"C:\BTFiles\btgithub1b\TDAAPI\HistoricalData\Debug", self.Symbol, '')
-        lgd("debugging datafile same date issue ")
+        #a_utils.DF2CSV(self.HistDF, r"C:\BTFiles\btgithub1b\TDAAPI\HistoricalData\Debug", self.Symbol, '')
+        #lgd("debugging datafile same date issue ")
+
         # other new value for OLI fields
         # find the lastest data
 

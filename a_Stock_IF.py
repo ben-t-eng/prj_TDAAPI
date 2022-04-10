@@ -98,7 +98,7 @@ class Stock:
         yDF2.set_index(keys='Date', inplace=True)
 
         #https://www.statology.org/pandas-convert-column-to-int/#:~:text=You%20can%20use%20the%20following%20syntax%20to%20convert,Integer%20Suppose%20we%20have%20the%20following%20pandas%20DataFrame%3A
-        yDF2['datetime'] = yDF2['datetime'].astype('int64')
+        yDF2['datetime'] = yDF2['datetime'].astype('int64')  # so you get complete resolution vs 1.649E+12
 
         self.HistDF=yDF2
         #no need and not safe, self.HistDF= yDF2.iloc[:, 1:] #takes out the firstcolumn of serial numbers, 
@@ -146,8 +146,12 @@ class Stock:
 
         self.Price=self.HistDF['close'][-1]
         self.Volume=self.HistDF['volume'][-1]
-        a=int(self.HistDF['datetime'][-1])
-        self.PriceDate=a_utils.TDAepoch2DT(a)
+        a=a_utils.TDAepoch2DT(int(self.HistDF['datetime'][-1]))
+        
+        self.PriceDate=a
+        self.PriceDate=a
+        ## 4/7/22 self.PriceDate=self.HistDF['datetime'][-1]
+        
         self.SMADate=self.PriceDate
 
         #lgi(" ppp updated price=" + str(self.Price) +' volume=' +str(self.Volume) + 

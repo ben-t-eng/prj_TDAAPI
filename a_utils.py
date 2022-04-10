@@ -134,7 +134,7 @@ def DateTime2UTC(DateTime):
 
     TimeDelta=localTZinfo.utcoffset(localDateTime)
  
-    UTCDT= localDateTime+TimeDelta
+    UTCDT= localDateTime  -  TimeDelta
  
     #UTCDT1= UTCDT.astimezone(timezone.utc)
     return UTCDT

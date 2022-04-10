@@ -5,7 +5,8 @@ URL_debug_data_file=r'\HistoricalData\Debug\GOOG_2022_02_20-21_03.csv'
 URL_CVS_file=r'\HistoricalData'
 URL_plt_path=r"\HistoricalData"
 
-URL_ChromeDriver=r'\chromedriver_win32\chromedriver.exe'
+#has to match chrome browser revision ,as of 4/09/2022, rev 100
+URL_ChromeDriver=r'\chromedriver_win32\chromedriver_100.exe'
 
 # Outlook image insertion requires absolute path while Pandas CVS write does not 
 # browser

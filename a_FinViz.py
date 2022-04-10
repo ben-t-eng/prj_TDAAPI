@@ -51,8 +51,8 @@ class FinViz:
             lge('FinViz plt not saved to' + str(yPath))
 
 
-#%%
-#  not running yet 220306
+#%% local function 
+# running 220406
 def getChart2( yStockSymbol, savePath):
         try:
             
@@ -61,11 +61,18 @@ def getChart2( yStockSymbol, savePath):
              yPath=  a_utils.addDir( abs_path+savePath, yStockSymbol)  # addDir will create new dir if not exists
              yPath=  a_utils.FilePath(Path=yPath, FileNm=filenm, TimeString='', Suffix='')
              
-             yBrowserExe= {'executable_path': abs_path+r'\chromedriver_win32\chromedriver.exe'}
-
+             #has to match chrome browser revision ,as of 4/09/2022, rev 100
+             yBrowserExe= {'executable_path': abs_path+r'\chromedriver_win32\chromedriver_100.exe'}
+            
+            
+             #has to match chrome browser revision ,as of 4/09/2022, rev 100=
              yFinVizURL="https://charts2.finviz.com/chart.ashx?t=" + yStockSymbol +"&ty=c&ta=1&p=d&s=l"
-                
+             
+
+
              browser=Browser('chrome',**yBrowserExe, headless=False) #headless means invisible
+             #browser=Browser('chrome',**yBrowserExe)
+             
              browser.driver.set_window_size(900, 480)
              browser.visit(yFinVizURL)
              #screenshot_path = browser.find_by_tag('img').first.screenshot(yPath)  # require abs path, but no c:\
@@ -76,7 +83,7 @@ def getChart2( yStockSymbol, savePath):
              lgi("FinViz plt saved at:" + str(screenshot_path) )         
 
         except:
-             lge('FinViz plt not saved to' + str(yPath))       
+             lge('FinViz plt not saved to: ' + str(yPath))       
 
 
 #%% 
@@ -85,5 +92,7 @@ import os
 
 getChart2("goog", "\HistoricalData\Debug")
 
+
+# %%
 
 # %%

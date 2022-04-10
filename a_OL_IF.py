@@ -145,7 +145,8 @@ class OLI_Stock :
             yWDoc.Tables(yWDoc.Tables.Count).ID = 123
 
             #first cell with time and date 
-            yTString=datetime.datetime.now().strftime('%x;  %X') + yMsg
+            yTString="Charts for " + self.Stock.Symbol +"; Created at: " + datetime.datetime.now().strftime('%x;  %X') + yMsg
+           
 
             yRng =yWDoc.Characters(1)
             yRng.InsertBefore( yTString )

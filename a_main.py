@@ -19,16 +19,28 @@
 
 
 # %%
-##############
-# all the imports
-##### for logging 
+# logging for debugging 
 import logging
-from logging import debug as lgd
-from logging import info as lgi
-from logging import error as lge
-from logging import warning as lgw
-from logging import critical as lgc
+# for every module/library file 
+# need below code block in this debug cell in very file / module to use lgd,ldi,lgw,lge, lgc 
+# [from xxx import yyy as zzz] is to rename yyy to zzz
+from logging import debug    as lgd   #10
+from logging import info     as lgi   #20
+from logging import warning  as lgw   #30
+from logging import error    as lge   #40
+from logging import critical as lgc   #50 #
+
+# step 2, select one of below line 
+import a_logging as alog
+# to customize the logging obj, all format propregate to root logging obj
+lg=alog.BTLogger( stdout_filter=alog.yfilter10, stream_filter=alog.yfilter10)
+
+
+
+
+# %%
 from io import StringIO
+from signal import SIG_DFL
 #####################
 import sys 
 import datetime
@@ -51,35 +63,49 @@ import os
 from matplotlib import pyplot as plt
 import numpy as np
 import a_TA1_Plt
+import a_FinViz
 
-
-# %%
-# logging for debugging 
-#
-#yfilter=a_utils.LevelFilter((logging.CRITICAL,logging.INFO, logging.WARNING, logging.DEBUG))
-yfilter=(a_utils.LevelFilter((logging.INFO, logging.CRITICAL, logging.DEBUG)) , a_utils.LevelFilter((logging.INFO, logging.CRITICAL, logging.DEBUG)))
-yfilter2=(a_utils.LevelFilter((logging.INFO, logging.DEBUG)) , a_utils.FileFilter())
-yfilter3=(a_utils.LevelFilter((logging.INFO,)) , a_utils.FileFilter())
-yfilter1=a_utils.LevelFilter((logging.WARNING, logging.INFO, logging.DEBUG))  # have to have two items , even if the same
-global lg
-lg=a_utils.BTLogger( stdout_filter=yfilter3, stream_filter=yfilter3)
 
 
 # %%
 # start from Outlook 
+testrun=0 
+only_exclamation=1  # only those outlook exclamation marked items are updated
+
+
 yWD= win32.gencache.EnsureDispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
 yOL = win32.gencache.EnsureDispatch("Outlook.Application")  #w, needed for importing constants:
 yNS = yOL.GetNamespace("MAPI")
 yFolder = yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities']
 
 for yOLI in yFolder.Items:
-    print('-------------------------------------------------------------')
+    print(yOLI.UserProperties.Find("SEC").Value +'-------------------------------------------------------------')
     # flush the string_io for next security
     lg.FlushStringIO()
 
+    
+
+    ###yO_S=a_OL_IF.OLI_Stock(yOLI,lg)
+    ###yO_S.InitStock()
+
+    #only go further for those are marked "Test" in OLI subject field
+    yMsg=''
+    if testrun==1  and yOLI.Subject  !='Test':
+        continue
+    elif testrun==1 :
+        yMsg=" -------> Using Test Data <-------" 
+
+     
+    #https://docs.microsoft.com/en-us/office/vba/api/outlook.olimportance
+    #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.importance
+    if only_exclamation==1 and yOLI.Importance!= 2: continue
+
     yO_S=a_OL_IF.OLI_Stock(yOLI,lg)
     yO_S.InitStock()
-    yO_S.Stock.GetHist()  
+
+    if yO_S.Stock.GetHist(testrun) == 0: continue  # 20220218 , changed from 1 to 0 ; 1 for testing, 0 for getting data from TDA 
+
+
 
     yTA3=a_TA1_Plt.TA1(yO_S.Stock) 
     yTA3.createPriceDS() 
@@ -96,16 +122,31 @@ for yOLI in yFolder.Items:
     yPlt.plt_all(yTA3)
 
    
-    yO_S.UpdateOLI()
+  #get plot from FinViz.com
+    yFV=a_FinViz.FinViz()
+    yFV.getChart(yO_S.Stock)
 
 
-    #yStock=a_OL_IF.InitStock (yOLI)
-    #yStock.GetHist() # include TA and saving 
-    #a_OL_IF.UpdateOLI1(yOLI, yStock, lg)
 
-   # print ('----OL comment:'+lg.log_StringIO.getvalue())
-    yOLI=None
-    break
+    # lgi(" before Updating OLI")
+
+    yO_S.UpdateOLI(yMsg)
     
+    yOLI.Save()
+    yOLI.Close(0)  #! save the outlook item, error means something wrong in wrtingt to OLI 
+
+   
+    
+    
+yWD=None
+yOL=None   
 
 
+
+# %%
+# testing module code
+###################################################
+
+def steps():
+    a=1
+    b=2

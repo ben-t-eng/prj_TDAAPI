@@ -1,4 +1,7 @@
 #%%
+#rom curses import ACS_DARROW
+#from socket import ALG_SET_AEAD_ASSOCLEN
+#from attr import asdict
 from splinter import Browser
 from selenium import webdriver
 import a_Settings 
@@ -87,12 +90,15 @@ def getChart2( yStockSymbol, savePath):
 
 
 #%% 
-import a_utils
-import os
 
-getChart2("goog", "\HistoricalData\Debug")
+if __name__ == '__main__':
+    import a_utils
+    import os
+
+    getChart2("goog", "\HistoricalData\Debug")
 
 
-# %%
+
+
 
 # %%

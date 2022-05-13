@@ -126,34 +126,56 @@ def epoch_from_today( Yr=0, Mo=0, Day=0):
 
 from dateutil import tz 
 #
+def DateTime2UTC4OLI(DateTime):
+    localDateTime=DateTime.astimezone()  # add tz info to DT object
+    localTZinfo=localDateTime.tzinfo        # get tzinfo obj 
+    
+    #lgd('Local timezone name=', localTZinfo.tzname(localDateTime) )
+
+    TimeDelta=localTZinfo.utcoffset(localDateTime)
+ 
+    #when + timedelta: utc now is  2022_05_08-16_14 CA now is  2022_05_08-23_14; ==> wrong 
+    #when - timedelta: utc now is  2022_05_09-06_18 CA now is  2022_05_08-23_18; ==> correct 
+    UTCDT= localDateTime + TimeDelta # +TimeDelta to make outlook datetime field "LSUDATE" dispiay PST times
+     #lgd('Local timezone delta =', TimeDelta. )
+    #UTCDT1= UTCDT.astimezone(timezone.utc)
+    return UTCDT
+
 def DateTime2UTC(DateTime):
     localDateTime=DateTime.astimezone()  # add tz info to DT object
     localTZinfo=localDateTime.tzinfo        # get tzinfo obj 
     
-    #lgd('DateTime2UTC(): Local timezone name===', localTZinfo.tzname(localDateTime) )
+    #lgd('Local timezone name=', localTZinfo.tzname(localDateTime) )
 
     TimeDelta=localTZinfo.utcoffset(localDateTime)
  
-    UTCDT= localDateTime  -  TimeDelta
- 
+    #when + timedelta: utc now is  2022_05_08-16_14 CA now is  2022_05_08-23_14; ==> wrong 
+    #when - timedelta: utc now is  2022_05_09-06_18 CA now is  2022_05_08-23_18; ==> correct 
+    UTCDT= localDateTime - TimeDelta # +TimeDelta to accomodate outlook datetime field "LSUDATE" match PST times
+     #lgd('Local timezone delta =', TimeDelta. )
     #UTCDT1= UTCDT.astimezone(timezone.utc)
     return UTCDT
-
 
 #%%
 #from datetime import datetime; some error 
 def TDAepoch2DT(TDA_TS ):
-    # in ms
+    # for Timestamp from TD-Ameritrade API 
+    # need to add 15 hours = 54000000 ms to PST time ; 
+    # TDATrade quote uses 12pm Timestamp until 9pm of the trade day,  
+    # after 9pm, quote comes with 1 pm timestamp
+    # in ms; POSIX timestamp is in seconds
     ySTARTDATE_TS=315561600000   #1980/1/1
+    yBiasTDA2SD=54000000   
 
     if round(TDA_TS) > round(ySTARTDATE_TS):
-        yDT=datetime.datetime.fromtimestamp(TDA_TS/1000)
+        yDT=datetime.datetime.fromtimestamp((TDA_TS + yBiasTDA2SD)/1000)
     else :
         yDT=datetime.datetime.fromtimestamp(ySTARTDATE_TS/1000)
 
     return yDT
 
 #%%
+# May 5 /2022 : below logging codes are replaced by a_logg.py 
 import logging
 import sys 
 from io import StringIO
@@ -264,4 +286,17 @@ class BTLogger:
 #lge=lambda y: logging.error(y)
 #lgc=lambda y: logging.critical(y)
 #lgd=lambda y: logging.debug(y)
-    
+
+
+# %% 
+# testing module codes 
+################################################
+
+if __name__ == "__main__" : 
+    # Epoch number from https://developer.tdameritrade.com/quotes/apis/get/marketdata/%7Bsymbol%7D/quotes
+    print ('Quotetimelong:' ,TDAepoch2DT(1652158800000), "; tradetimelong:", TDAepoch2DT(315561600000), "; regularMarketTradeTimeInLong:", TDAepoch2DT(1652212800523)) 
+    #Quotetimelong: 2022-05-10 16:58:13.837000 ; 
+    #tradetimelong: 2022-05-10 16:58:13.837000 ; 
+    #regularMarketTradeTimeInLong: 2022-05-10 13:00:00.523000
+
+# %%

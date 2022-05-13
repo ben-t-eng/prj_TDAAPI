@@ -50,6 +50,19 @@ def TDA_Price_Hist ( APIK='', PlayLoad='', APIURL='', Symbol='', StartDTStamp=0,
           Symbol='AMD'
 
      #print( 'Symbol=',Symbol,'APIURL=', APIURL)
+     #https://developer.tdameritrade.com/quotes/apis/get/marketdata/%7Bsymbol%7D/quotes
+     #https://api.tdameritrade.com/v1/marketdata/GOOG/pricehistory?apikey=K4OAZ0RGJBLI4VEBPOXZFUNFACKWPNNF&periodType=month&period=1&frequencyType=daily&frequency=1&endDate=1652244122000&startDate=1620708122000&needExtendedHoursDat=false
+     # gets GMT time 2021-05-10 22:00:00  from 
+     # <candles>
+     # <open>2291.86</open>
+     # <high>2322.0</high>
+     # <low>2283.0</low>
+     # <close>2308.76</close>
+     # <volume>1605548</volume>
+     # <datetime>1620709200000</datetime>
+     # </candles>
+    
+    
      if APIURL=='':
           APIURL="https://api.tdameritrade.com/v1/marketdata/{}/pricehistory".format(Symbol)
 
@@ -67,4 +80,8 @@ def TDA_Price_Hist ( APIK='', PlayLoad='', APIURL='', Symbol='', StartDTStamp=0,
      hist_df=hist_df[df_cols]
      lgd("TDA_Price_Hist ")
      return hist_df
+
+# %% 
+# testing module codes 
+################################################
 

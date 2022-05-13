@@ -12,10 +12,15 @@ import pandas as pd
 import numpy as np
 import datetime
 import a_Stock_IF
-import logging
-from logging import debug as lgd
-from logging import info as lgi
-from logging import error as lge
+
+
+from logging import debug    as lgd   #10
+from logging import info     as lgi   #20
+from logging import warning  as lgw   #30
+from logging import error    as lge   #40
+from logging import critical as lgc   #50 
+
+
 import a_Settings
 
 ###################################
@@ -30,7 +35,7 @@ class Stock:
 
         self.CompanyNm = Company
         self.Status= 0
-        self.Symbol= Symbol
+        self.Symbol= Symbol.upper() #.capitalize()
         self.Sector=''
         self.Industry=''
 
@@ -81,40 +86,49 @@ class Stock:
     # get market data
         #lgd("get symbol market data, ok")
 
-     
-        ySDate=a_utils.epoch_from_today( Yr=1, Mo=0, Day=0) 
+        try: 
+            ySDate=a_utils.epoch_from_today( Yr=1, Mo=0, Day=0) 
 
-        ###################self.HistDF=a_TDA_IF.TDA_Price_Hist (Symbol=self.Symbol, StartDTStamp=self.HistStartDate, EndDTStamp=self.HistEndDate )
-        #
-        if Test==1 :
-            ##yDF2=pd.read_csv(r"C:\BTFiles\btgithub1b\TDAAPI\HistoricalData\Debug\GOOG_2022_02_20-21_03.csv")
-            yDF2=pd.read_csv(a_Settings.URL_debug_data_file)
-            lgi("--> debug data file used <--" + a_Settings.URL_debug_data_file + "; instead of data from web e.g. TDA and etc." ) 
-        else:
-            yDF2=a_TDA_IF.TDA_Price_Hist ( Symbol=self.Symbol, StartDTStamp=ySDate, EndDTStamp=0 )
-        
-             
-        yDF2['Date']= pd.to_datetime(yDF2['datetime'], unit='ms')
-        yDF2.set_index(keys='Date', inplace=True)
+            ###################self.HistDF=a_TDA_IF.TDA_Price_Hist (Symbol=self.Symbol, StartDTStamp=self.HistStartDate, EndDTStamp=self.HistEndDate )
+            #
+            if Test==1 :
+                ##yDF2=pd.read_csv(r"C:\BTFiles\btgithub1b\TDAAPI\HistoricalData\Debug\GOOG_2022_02_20-21_03.csv")
+                yDF2=pd.read_csv(a_Settings.URL_debug_data_file)
+                lgi("--> debug data file used <--" + a_Settings.URL_debug_data_file + "; instead of data from web e.g. TDA and etc." ) 
+            else:
+                yDF2=a_TDA_IF.TDA_Price_Hist ( Symbol=self.Symbol, StartDTStamp=ySDate, EndDTStamp=0 )
+            
 
-        #https://www.statology.org/pandas-convert-column-to-int/#:~:text=You%20can%20use%20the%20following%20syntax%20to%20convert,Integer%20Suppose%20we%20have%20the%20following%20pandas%20DataFrame%3A
-        yDF2['datetime'] = yDF2['datetime'].astype('int64')  # so you get complete resolution vs 1.649E+12
+            #from TDA ms Timestamp to panda PST time +11 hours
+            yTDA2PDBias= 28800000 #ms
 
-        self.HistDF=yDF2
-        #no need and not safe, self.HistDF= yDF2.iloc[:, 1:] #takes out the firstcolumn of serial numbers, 
+            yDF2['Date']= pd.to_datetime(yDF2['datetime'] + yTDA2PDBias , unit='ms')
+            yDF2.set_index(keys='Date', inplace=True)
 
-        ##############################################
-        # Date (DT index)  symbol     open       high       low    close      SMA1  \
+            #https://www.statology.org/pandas-convert-column-to-int/#:~:text=You%20can%20use%20the%20following%20syntax%20to%20convert,Integer%20Suppose%20we%20have%20the%20following%20pandas%20DataFrame%3A
+            yDF2['datetime'] = yDF2['datetime'].astype('int64')  # so you get complete resolution vs 1.649E+12
 
-        ##############################################
+            self.HistDF=yDF2
+            #no need and not safe, self.HistDF= yDF2.iloc[:, 1:] #takes out the firstcolumn of serial numbers, 
 
-        lgd( "got quote update, " + str(type(self.HistDF)) + str(self.HistDF.shape)) 
+            ##############################################
+            # Date (DT index)  symbol     open       high       low    close      SMA1  \
 
-        #print (yDF2) 
+            ##############################################
 
-        self.UpdateTA()
+            lgd( "got quote update, " + str(type(self.HistDF)) + str(self.HistDF.shape)) 
 
-        self.SaveHist()
+            #print (yDF2) 
+
+            self.UpdateTA()
+
+            self.SaveHist()
+
+            return 1
+        except:
+            lge ("failed, check SEC symbol in captital or internet connection")
+            return 0
+
 
     def UpdateTA(self):
         lgd('UpdateTA()')
@@ -146,10 +160,16 @@ class Stock:
 
         self.Price=self.HistDF['close'][-1]
         self.Volume=self.HistDF['volume'][-1]
-        a=a_utils.TDAepoch2DT(int(self.HistDF['datetime'][-1]))
+        # a=a_utils.TDAepoch2DT(int(self.HistDF['datetime'][-1]))
+
+        a0=self.HistDF['datetime'][-1].astype('int64')
+        a=a_utils.TDAepoch2DT(a0) 
+        b=pd.to_datetime(a0, unit='ms')
+        s1="--->SMADate=PriceDate=" + a.strftime("%Y_%m_%d-%H_%M") + "; PD=" + b.strftime("%Y_%m_%d-%H_%M") +"; a0="+ str(a0)
+        lgc(s1 )
         
         self.PriceDate=a
-        self.PriceDate=a
+        
         ## 4/7/22 self.PriceDate=self.HistDF['datetime'][-1]
         
         self.SMADate=self.PriceDate
@@ -157,7 +177,7 @@ class Stock:
         #lgi(" ppp updated price=" + str(self.Price) +' volume=' +str(self.Volume) + 
         #    ' date=' + str(self.PriceDate) + ' SMA=' + str(self.SMA))
     
-        test1 = self.HistDF['SMA1']
+    
         self.SMA=self.HistDF['SMA1'][-1]  # column 5 is sma , get this latest SMA value to stock object
         if  round(self.SMAState)==1 and float(self.SMA) >= float(self.Price):
             self.SMAAlert = -1

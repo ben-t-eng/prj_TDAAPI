@@ -10,6 +10,6 @@ Automating Stock Investing Technical Analysis With Python _ by Farhad Malik _ Fi
 #Archive/a_utils.py
 *.whl
 *.pyc
-Archive/*
-#__pycache__/*
+# Archive/*
+__pycache__/*
 *.exe

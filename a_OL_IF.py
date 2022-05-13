@@ -4,7 +4,7 @@
 ### print(win32com.__gen_path__) #to find the win32com dir and delete it if there is error about 
 ### or try this: python -m win32com.client.makepy "Excel.Application" or 'Outlook.Application"
 
-
+# %%
 ## imports
 import win32com.client as win32
 from win32com.client import constants as C
@@ -27,7 +27,7 @@ from logging import error as lge
 # #global lg
 # lg=a_utils.BTLogger( stdout_filter=yfilter2, stream_filter=yfilter3)
 
-#%%
+# %%
 class OLI_Stock :
     def __init__(self, OLI, Logging_Log):
         self.Stock = None
@@ -83,7 +83,8 @@ class OLI_Stock :
             
             
             lgd('UpdateOLIFields() OK3')
-            yDT5=a_utils.DateTime2UTC(self.Stock.SMADate)
+            yDT5=a_utils.DateTime2UTC4OLI(self.Stock.SMADate)
+            ### yDT5=self.Stock.SMADate # GMT time, 
             if yDT5 != None:
                 self.SetOLIUsrProp("SMADate", yDT5 , C.olDateTime)
                 self.SetOLIUsrProp("PriceDate", yDT5, C.olDateTime)
@@ -104,6 +105,19 @@ class OLI_Stock :
 
             lgd('UpdateOLIFields() OK7')
             self.SetOLIUsrProp( "SMADays", self.Stock.SMADays , C.olNumber)
+
+            # outlook userproperty stores time in GMT (UTC), when set, it auto change to UTC by know system time is PST 
+            # therefore add 6-7 hours ( ahead) 
+            
+            lgd('UpdateOLIFields() OK8')
+            #https://docs.microsoft.com/en-us/office/vba/api/outlook.oluserpropertytype
+            #https://docs.microsoft.com/en-us/office/vba/api/outlook.timezone.standardbias
+
+            #tz=self.OLI.Application.TimeZones.CurrentTimeZone
+            #lgd('timezone Bias:', tz.Bias, '; daylight b:', tz.DaylightBias, '; std b ;', tz.StandardBiaz ) 
+
+            self.SetOLIUsrProp( "LSUDate", a_utils.DateTime2UTC4OLI(datetime.datetime.now()) , C.olDateTime)       #last success update date
+            ###self.SetOLIUsrProp( "LSUDate", datetime.datetime.now() , C.olDateTime)
 
             self.OLI.Save()
         except:
@@ -293,4 +307,18 @@ class OLI_Stock :
 
         return (yRng, n) 
 
-        
+# %%
+# testing module functiions
+# https://docs.python.org/3/library/datetime.html#date-objects
+
+def ltest1():
+    dtobj1=a_utils.DateTime2UTC4OLI(datetime.datetime.now()) 
+    print( "utc now is ", dtobj1.strftime("%Y_%m_%d-%H_%M"), "CA now is ", datetime.datetime.now().strftime("%Y_%m_%d-%H_%M") )
+    # utc now is  2022_05_09-02_47 CA now is  2022_05_08-19_47
+
+if __name__ =='__main__':
+    a=1
+    ltest1()
+   
+
+# %%

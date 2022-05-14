@@ -27,7 +27,7 @@ from logging import critical as lgc   #50
 import sys 
 from io import StringIO
 import datetime
-from h11 import ERROR
+#from h11 import ERROR
 
 
 

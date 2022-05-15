@@ -16,9 +16,11 @@ import a_utils
 import a_TDA_IF
 
 import logging
-from logging import debug as lgd
-from logging import info as lgi
-from logging import error as lge
+from logging import debug    as lgd   #10
+from logging import info     as lgi   #20
+from logging import warning  as lgw   #30
+from logging import error    as lge   #40
+from logging import critical as lgc   #50 
 
 # yfilter=(a_utils.LevelFilter((logging.INFO, logging.CRITICAL, logging.DEBUG)) , a_utils.LevelFilter((logging.INFO, logging.CRITICAL, logging.DEBUG)))
 # yfilter2=(a_utils.LevelFilter((logging.INFO, logging.DEBUG, logging.ERROR)) , a_utils.FileFilter())
@@ -131,7 +133,7 @@ class OLI_Stock :
             self.UpdateOLIFields()
             
             yInsp =self.OLI.GetInspector    
-            yWDoc =yInsp.WordEditor
+            yWDoc =yInsp.WordEditor #https://docs.microsoft.com/en-us/office/vba/api/word.document
             #lgd('worddoc id1='+ str(id(yWDoc)))
 
             #!! need this to write inside add tables
@@ -142,14 +144,33 @@ class OLI_Stock :
             if yWDoc.ProtectionType != C.wdNoProtection: 
                 yWDoc.Unprotect()
 
-            ySel=yWDoc.Windows(1).Selection  # get selection obj 
+            
+            #2022 05/15 checking to see if can delete all contents within the worddoc obj
+            #https://docs.microsoft.com/en-us/office/vba/api/word.range.delete
+            ### yRng.Delete()  # did not delete all 
+            # https://docs.microsoft.com/en-us/office/vba/api/word.document.content 
+            # lgc("Content.Delete WDOC step1")
+          #  yWDoc.Content.Select()  # content is a range obj 
+            yWDoc.Content.Delete()  # content select() selects all in the range 
+            # deletes all exsiting contents, making  yRng, n =self.RngOutOfTables(ySel.Range) not necessary
+            #lgc("Original Content.Delete")
 
+
+            ySel=yWDoc.Windows(1).Selection  # get selection obj , https://docs.microsoft.com/en-us/office/vba/api/word.windows
+            # selection itself is a word window object https://docs.microsoft.com/en-us/office/vba/api/word.window
+            #ySel.Delete()
+            
+
+            
             #set range to the beginning for the doc
             yRng, n =self.RngOutOfTables(ySel.Range)
             #print('n=', n)
 
             #move to doc top
             yRng.Move(Unit=C.wdStory, Count=-1) #w, perfectly and one step!  
+
+           
+            
 
             #insert content
             yWDoc.Tables.Add(Range=ySel.Range, NumRows=3, NumColumns=1,
@@ -197,8 +218,9 @@ class OLI_Stock :
             lge(" ! exception ")
            
         finally:
-            
-            #yInsp.Close(C.olSave) #nw, no need 
+            # yWDoc.Close(SaveChanges=-1)
+            # yWDoc.Save()
+            yInsp.Close(C.olSave) #nw, no need 
             #self.OLI.Save()   # to call in main loop
             lgd("OLIUpdate finally closed at: ")
 
@@ -267,6 +289,7 @@ class OLI_Stock :
         # https://stackoverflow.com/questions/7226721/how-can-you-get-the-current-table-in-ms-word-vba
         # cursor exist to outside of any table in MS Word
         # n nest level   
+        #https://docs.microsoft.com/en-us/office/vba/api/word.range
         if yRng.Information(C.wdWithInTable)==True and n < 500 :
             n=n+1 
 

@@ -83,17 +83,18 @@ import a_FinViz
 # %%
 # start from Outlook 
 testrun=0 
-only_exclamation=0  # only those outlook exclamation marked items are updated
+only_exclamation=1 # only those outlook exclamation marked items are updated
 
 #https://stackoverflow.com/questions/50127959/win32-dispatch-vs-win32-gencache-in-python-what-are-the-pros-and-cons
 ## yWD= win32.gencache.EnsureDispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
 ## yOL = win32.gencache.EnsureDispatch("Outlook.Application")  #w, needed for importing constants:
-yWD= win32.gencache.dynamic.Dispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
-yOL = win32.gencache.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
+yWD= win32.dynamic.Dispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
+yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
 
 
 yNS = yOL.GetNamespace("MAPI")
 yFolder = yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities']
+yFolder1 =yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities'].Folders['History']
 
 for yOLI in yFolder.Items:
     print(yOLI.UserProperties.Find("SEC").Value +'-------------------------------------------------------------')
@@ -150,10 +151,16 @@ for yOLI in yFolder.Items:
     yO_S.UpdateOLI(yMsg)
     
     yOLI.Save()
+    
+    #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.copy
+    yOLI1=yOLI.Copy()
+    yOLI1.Move(yFolder1)
+    yOLI1.Close(0)
+
     yOLI.Close(0)  #! save the outlook item, error means something wrong in wrtingt to OLI 
 
    
-    
+print(">>>>>>>>>>>>Finsihed iteration of SEC OLIs")    
     
 yWD=None
 yOL=None   

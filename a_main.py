@@ -82,7 +82,7 @@ import a_FinViz
 
 # %%
 # start from Outlook 
-testrun=0 
+testrun=0
 only_exclamation=1 # only those outlook exclamation marked items are updated
 
 #https://stackoverflow.com/questions/50127959/win32-dispatch-vs-win32-gencache-in-python-what-are-the-pros-and-cons
@@ -122,8 +122,6 @@ for yOLI in yFolder.Items:
     yO_S.InitStock()
 
     if yO_S.Stock.GetHist(testrun) == 0: continue  # 20220218 , changed from 1 to 0 ; 1 for testing, 0 for getting data from TDA 
-
-
 
     yTA3=a_TA1_Plt.TA1(yO_S.Stock) 
     yTA3.createPriceDS() 

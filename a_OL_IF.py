@@ -1,4 +1,4 @@
-##
+## OL_IF == Outlook Interface 
 ##
 #####https://stackoverflow.com/questions/52889704/python-win32com-excel-com-model-started-generating-errors
 ### print(win32com.__gen_path__) #to find the win32com dir and delete it if there is error about 
@@ -133,7 +133,9 @@ class OLI_Stock :
             self.UpdateOLIFields()
             
             yInsp =self.OLI.GetInspector    
-            yWDoc =yInsp.WordEditor #https://docs.microsoft.com/en-us/office/vba/api/word.document
+
+            # wordeditor is word.document obj : https://docs.microsoft.com/en-us/office/vba/api/word.document
+            yWDoc =yInsp.WordEditor 
             #lgd('worddoc id1='+ str(id(yWDoc)))
 
             #!! need this to write inside add tables
@@ -145,22 +147,24 @@ class OLI_Stock :
                 yWDoc.Unprotect()
 
             
-            #2022 05/15 checking to see if can delete all contents within the worddoc obj
+            #2022 05/15  can delete all contents within the worddoc obj
             #https://docs.microsoft.com/en-us/office/vba/api/word.range.delete
             ### yRng.Delete()  # did not delete all 
-            # https://docs.microsoft.com/en-us/office/vba/api/word.document.content 
-            # lgc("Content.Delete WDOC step1")
-          #  yWDoc.Content.Select()  # content is a range obj 
-            yWDoc.Content.Delete()  # content select() selects all in the range 
-            # deletes all exsiting contents, making  yRng, n =self.RngOutOfTables(ySel.Range) not necessary
-            #lgc("Original Content.Delete")
+            # https://docs.microsoft.com/en-us/office/vba/api/word.document.content is a range 
+           
+            # yWDoc.Content.Select()  # content is a range obj 
+            yWDoc.Content.Delete()  
+          
 
 
             ySel=yWDoc.Windows(1).Selection  # get selection obj , https://docs.microsoft.com/en-us/office/vba/api/word.windows
             # selection itself is a word window object https://docs.microsoft.com/en-us/office/vba/api/word.window
-            #ySel.Delete()
             
-
+            # range is a section of text/area in word document 
+            # selection is a selected section of text/area
+            # selection is for user to pick using GUI 
+            # selection object delete() is similar to range delete() 
+            # selection delete() need to run selection() first, while range delelte() need not 
             
             #set range to the beginning for the doc
             yRng, n =self.RngOutOfTables(ySel.Range)

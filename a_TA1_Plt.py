@@ -8,6 +8,7 @@ from logging import info as lgi
 from logging import error as lge
 from logging import warning as lgw
 from logging import critical as lgc
+
 from io import StringIO
 #############
 import sys 
@@ -28,22 +29,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 import a_Stock_IF
 
-# %%
-# logging for debugging 
-#
-
-# #yfilter=a_utils.LevelFilter((logging.CRITICAL,logging.INFO, logging.WARNING, logging.DEBUG))
-# #yfilter=(a_utils.LevelFilter((logging.INFO, logging.CRITICAL, logging.DEBUG)), None) , a_utils.FileFilter())
-# yfilter=(a_utils.LevelFilter((logging.INFO, logging.CRITICAL, logging.DEBUG)) , a_utils.LevelFilter((logging.INFO, logging.CRITICAL, logging.DEBUG)))
-# yfilter2=(a_utils.LevelFilter((logging.INFO, logging.CRITICAL, logging.DEBUG)) , a_utils.FileFilter())
-
-# yfilter1=(a_utils.LevelFilter((logging.WARNING, logging.INFO, logging.DEBUG)),)  # have to have two items , even if the same
-# yfilter3=[a_utils.LevelFilter([logging.WARNING])]
-
-# #global lg
-
-# lg=a_utils.BTLogger( stdout_filter=yfilter2)
-
 
 # %%
 # "C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\Automating Stock Investing Technical Analysis With Python _ by Farhad Malik _ FinTechExplained _ Medium_btc.pdf"
@@ -53,12 +38,12 @@ import a_Stock_IF
 class TA1:
     def __init__(self, container):
         
-        self.container=container
+        self.container=container #a_stock_if.py class stock 
         self.symbol= container.Symbol
 
         ### expects pd dataframe in Stock format:symbol' 'open', 'high', 'low', 'close', 'volume', 'date' 
         self.TAs = container.HistDF      
-        self.prices=None #expects pd ds of prices with datetimeindexed  
+        self.prices=None #expects pd dataseries (DS) of prices with datetimeindexed  
     
 
     def createPriceDS(self): 
@@ -72,7 +57,7 @@ class TA1:
 
             #
             # self.prices= pd.Series(self.TAs['close'].values, index=self.TAs['Date'].values) #w without pd.Series(DF2['close'].values  , index=DF2['Date'] ) #price is PD series, with datetimeindex obj 
-            self.prices=self.TAs['close'] 
+            self.prices=self.TAs['close']  # self.prices is a DF not Data series
 
             #print('TAS=', self.TAs)
             #print( 'Prices=', self.prices)
@@ -86,10 +71,10 @@ class TA1:
     # you don;t need the "y" if this function is declared outside of the Company class
     # this is an instance method, requires "self" as the first arugment in a instance method
     def generate_buy_sell_signals(self, condition_buy, condition_sell, dataframe, strategy):
-        last_signal = None  # np series -> np array -> pd df 
-        indicators = []  # np series -> np array -> pd df 
-        buy = [] # np series -> np array -> pd df 
-        sell = [] # np series -> np array -> pd df 
+        last_signal = None  # text fir indicators
+        indicators = []  # list -> np array -> pd df 
+        buy = [] # list -> np array -> pd df 
+        sell = [] # list -> np array -> pd df 
 
         
         #print(" Buy sell signal() condition_buy type=", type(condition_sell))
@@ -144,6 +129,10 @@ class TA1:
         self.get_bollinger_bands()
         #print ("After bb", yTA.TAs)
 
+        self.get_CompressedBS()
+
+   
+
     def get_sma(self):
         close_prices = self.prices
     
@@ -159,8 +148,8 @@ class TA1:
         lgd("get_sma():df2 shape"+ str( DF2.shape))
         lgd("get_sma():df2 type"+ str(type(DF2)))
         
-        self.generate_buy_sell_signals(lambda x, dataframe: DF2['SMA'].values[x] < DF2['close'].iloc[x] , 
-                                          lambda x, dataframe: DF2['SMA'].values[x] > DF2['close'].iloc[x], DF2, 'SMA')
+        self.generate_buy_sell_signals(lambda x, DF2: DF2['SMA'].values[x] < DF2['close'].iloc[x] , 
+                                          lambda x, DF2: DF2['SMA'].values[x] > DF2['close'].iloc[x], DF2, 'SMA')
         
         #print("genbuysellsignal():company.ti shape after gen_signal", company.technical_indicators.shape)
         lgd("get_sma():company.ti shape, after gen_signal"+ str(self.TAs.shape))
@@ -226,6 +215,40 @@ class TA1:
             dataframe, 'Bollinger_Bands')
         return dataframe
 
+    def get_CompressedBS(self):
+            close_prices = self.prices
+        
+            DF2=self.TAs  #just use DF2 as alias of teh TAs Dataframe object
+
+            lgd("df2 shape :"+ str(DF2.shape))
+            
+            # self.cal_CompressedBSC()  #replaced by   def load_CmprsdBS(self) in a_Stock_IF()
+
+            lgd("df2 shape"+ str( DF2.shape))
+            lgd("df2 type"+ str(type(DF2)))
+            
+            self.generate_buy_sell_signals(lambda x, DF2: DF2['CmprsdB'].values[x] > DF2['close'].iloc[x] , 
+                                           lambda x, DF2: DF2['CmprsdS'].values[x] < DF2['close'].iloc[x], DF2, 'CmprsdBS')
+            
+        
+            lgd("after gen_buy_sell_signal"+ str(self.TAs.shape))
+            return DF2         
+
+    #replaced by def load_CmprsdBS(self) in a_Stock_IF()
+    def cal_CompressedBSC(self):
+            #for testing, get the average from the DS or DF price 
+            
+            df1=self.TAs['close']
+            print( "ds1 type is ",df1.dtypes, '', df1.info()  )
+
+
+            self.TAs['CmprsdB']= df1.min() *1.08
+            self.TAs['CmprsdS']= df1.max() *0.92
+            self.TAs['Cost']=df1.min() *1.18
+
+
+
+
 
 # %%
 # plotting 
@@ -250,7 +273,8 @@ class TA1_Plt:
 
             if not yDF[f'{strategy}_Sell'].isnull().all():
                 axs[0].scatter(yDF.index, yDF[f'{strategy}_Sell'], color='red', label='Sell Signal', marker='v', alpha=1)
-                axs[0].plot(yTA1.prices, label='Close Price',color='blue', alpha=0.35)
+        
+            axs[0].plot(yTA1.prices, label='Close Price',color='blue', alpha=0.35)
 
             plt.xticks(rotation=45)
             axs[0].set_title(title)
@@ -339,6 +363,28 @@ class TA1_Plt:
             plt.close(fig)
             # plt.show()
 
+    def plot_CmprsdBS(self, yTA1):
+            
+            
+            # Create and plot the graph
+            fig, axs = plt.subplots(2, sharex=True, figsize=(13,9))
+            self.plot_price_and_signals(fig, yTA1, yTA1.TAs, 'CmprsdBS', axs)
+            axs[1].plot(yTA1.TAs['CmprsdB'],  label=yTA1.symbol+' ComprsdB', color= 'green')
+            axs[1].plot(yTA1.TAs['CmprsdS'],  label=yTA1.symbol+' ComprsdS', color= 'red')
+            axs[1].plot(yTA1.TAs['Cost'],  label=yTA1.symbol+' Cost', color= 'black')
+            axs[1].plot(yTA1.TAs['close'],  label=yTA1.symbol+' price', color= 'blue')
+
+            axs[1].legend(loc='upper left')
+            axs[1].grid()
+           
+                 
+            # save image before the show
+            self.save_plot(yTA1, 'CmprsdBS', plt )
+
+
+            # don't show
+            plt.close(fig)
+            # plt.show()
 
 
     def save_plot(self, yTA1, strategy, plot):
@@ -363,46 +409,51 @@ class TA1_Plt:
         self.plot_rsi(yTA5)
         self.plot_bollinger_bands(yTA5)
         self.plot_sma(yTA5) 
+        self.plot_CmprsdBS(yTA5)
 
 #%%
+#############################################################
 #def testrun():
 import a_Stock_IF
 import pandas as pd
 import numpy as np
 
-try:
+def test1(): 
     #yYahooDS=  yf.Ticker(yGoog.symbol).history(period='1y')['Close']
     ###############################################################
-    DF2=pd.read_csv(r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug\GOOG_TDA_raw.csv')
+    DF2=pd.read_csv(r".\HistoricalData\Debug\GOOG_2022_02_20-21_03.csv")
 
 
-    #lgc("lgc")
-    #lge("lge")
-    #lgw("lgw")
-    #lgi('lgi')
-    #lgd('lgd')
 
-    #yStock=a_Stock_IF.Stock('CompanyA')
-    #yStock.HistDF= DF2
+    yStock=a_Stock_IF.Stock('CompanyA')
+    yStock.HistDF= DF2
+    yTA=TA1(yStock)  
+    yTA.createPriceDS()  # needed to populate the price DS first 
+    
+    yTA.set_TAs()
 
-    #yTA=TA1(yStock)
-    #yTA.createPriceDS()  # needed to populate the price DS first 
-    #print('ta.prices=', yTA.prices)
-    #print('TAs=', yTA.TAs)
-    #lgd(' yTA price ds =' + yTA.prices)
-    #lgd(' lgd: yTA TA ds =' + str(yTA.TAs))
-    #print(' yTA price ds =',yTA.prices)
-    #print (' yTA TA ds =',yTA.TAs)
+    print ("_________________________________")
+    print('ta.prices=', yTA.prices)
+  
+    print ("_________________________________")
+    print(' TA string=' , str(yTA.TAs))
+ 
+    print ("_________________________________")
+    print (' yTA =',yTA.TAs)
+
+    print ( id(yTA.TAs), " ids ", id(yTA.prices), " ", id(yTA.TAs["close"]))
+
+ 
+
+    ## yPlt=TA1_Plt()
+
+    ## yPlt.plt_all(yTA)
 
 
-    # yTA.set_TAs()
 
-    # yPlt=TA1_Plt()
+# %%
+if __name__ == "__main__" :
+    test1()
 
-    # yPlt.plt_all(yTA)
-
-except:
-    print('test not done')
-#testrun()
 
 # %%

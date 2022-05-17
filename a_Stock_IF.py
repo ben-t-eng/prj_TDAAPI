@@ -158,6 +158,7 @@ class Stock:
         # other new value for OLI fields
         # find the lastest data
 
+        # get latest trade day price, volume and trade date / time
         self.Price=self.HistDF['close'][-1]
         self.Volume=self.HistDF['volume'][-1]
         # a=a_utils.TDAepoch2DT(int(self.HistDF['datetime'][-1]))
@@ -176,26 +177,39 @@ class Stock:
 
         #lgi(" ppp updated price=" + str(self.Price) +' volume=' +str(self.Volume) + 
         #    ' date=' + str(self.PriceDate) + ' SMA=' + str(self.SMA))
-    
-    
-        self.SMA=self.HistDF['SMA1'][-1]  # column 5 is sma , get this latest SMA value to stock object
-        if  round(self.SMAState)==1 and float(self.SMA) >= float(self.Price):
-            self.SMAAlert = -1
-            self.SMAState =0  
-            
-            lgi( "SMA Alert: price dropped below SMA")
+        self.cal_SMA_Alert()
 
-        elif round(self.SMAState)==0 and float(self.SMA) < float(self.Price):
-            self.SMAAlert = 1
-            self.SMAState =1 
+        self.load_CmprsdBS()
+
+    def load_CmprsdBS(self):
+        df1=self.HistDF['close']
             
-            lgi("SMA Alert: price rose above SMA"+'; ')
-        else:
-            self.SMAAlert = 0
-            self.Comment=self.Comment + "SMA Alert reset since no change since last update" +'; ' 
-            
-            lgi("updated price=" + str(self.Price) +' volume=' +str(self.Volume) + 
-                'SMAdate=' + str(self.SMADate) + ' SMA=' + str(self.SMA) )
+        self.HistDF['CmprsdB']= df1.min() *1.08
+        self.HistDF['CmprsdS']= df1.max() *0.92
+        self.HistDF['Cost']=df1.min() *1.18
+
+
+    
+    def cal_SMA_Alert(self): 
+            self.SMA=self.HistDF['SMA1'][-1]  # column 5 is sma , get this latest SMA value to stock object
+            if  round(self.SMAState)==1 and float(self.SMA) >= float(self.Price):
+                self.SMAAlert = -1
+                self.SMAState =0  
+                
+                lgi( "SMA Alert: price dropped below SMA")
+
+            elif round(self.SMAState)==0 and float(self.SMA) < float(self.Price):
+                self.SMAAlert = 1
+                self.SMAState =1 
+                
+                lgi("SMA Alert: price rose above SMA"+'; ')
+            else:
+                self.SMAAlert = 0
+                self.Comment=self.Comment + "SMA Alert reset since no change since last update" +'; ' 
+                
+                lgi("updated price=" + str(self.Price) +' volume=' +str(self.Volume) + 
+                    'SMAdate=' + str(self.SMADate) + ' SMA=' + str(self.SMA) )
+
 
     def SaveHist(self):
         #lgi('SaveHist()')
@@ -216,3 +230,5 @@ class Stock:
         df=a_TDA_IF.TDA_Price_Hist ( Symbol=self.Symbol, StartDTStamp=ySDate, EndDTStamp=0 )
 
         return df
+
+    

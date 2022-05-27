@@ -39,6 +39,10 @@ class OLI_Stock :
         #self.Inspector= self.OLI.GetInspector
         #self.WDoc =self.Inspector.WordEditor
 
+    # def __init__(self, OLI):
+    #     self.Stock = None
+    #     self.OLI=OLI
+    #     #self.lg = Logging_Log 
 
     def InitStock (self):
 
@@ -197,6 +201,7 @@ class OLI_Stock :
             yRng.Move(Unit=C.wdCell, Count=1 )  # when you have single column , this moves to the cell below 
             
             self.Stock.Comment=self.lg.log_StringIO.getvalue()
+            ### self.Stock.Comment=logging.log_StringIO.getvalue()
             #lgd("Comment="+ self.Stock.Comment)
 
             yRng.InsertBefore(self.Stock.Comment)
@@ -334,6 +339,9 @@ class OLI_Stock :
 
         return (yRng, n) 
 
+
+
+#########################################################################
 # %%
 # testing module functiions
 # https://docs.python.org/3/library/datetime.html#date-objects

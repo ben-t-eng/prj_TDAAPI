@@ -103,8 +103,7 @@ for yOLI in yFolder.Items:
 
     
 
-    ###yO_S=a_OL_IF.OLI_Stock(yOLI,lg)
-    ###yO_S.InitStock()
+
 
     #only go further for those are marked "Test" in OLI subject field
     yMsg=''
@@ -119,6 +118,7 @@ for yOLI in yFolder.Items:
     if only_exclamation==1 and yOLI.Importance!= 2: continue
 
     yO_S=a_OL_IF.OLI_Stock(yOLI,lg)
+  
     yO_S.InitStock()
 
     if yO_S.Stock.GetHist(testrun) == 0: continue  # 20220218 , changed from 1 to 0 ; 1 for testing, 0 for getting data from TDA 

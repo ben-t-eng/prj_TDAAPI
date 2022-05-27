@@ -223,6 +223,7 @@ class TA1:
             lgd("df2 shape :"+ str(DF2.shape))
             
             # self.cal_CompressedBSC()  #replaced by   def load_CmprsdBS(self) in a_Stock_IF()
+            # self.load_CmprsdBS(self.TAs) 
 
             lgd("df2 shape"+ str( DF2.shape))
             lgd("df2 type"+ str(type(DF2)))
@@ -395,11 +396,11 @@ class TA1_Plt:
                 plot.savefig(yPath)
                 yPathSaved=yPath+'.png'
                
-                ### dictionary  yTA1.container.TA1 ---------- 
+                ### dictionary  yTA1.container.TA1 from a_stock_IF---------- 
                 yTA1.container.TA1['Strategies'][strategy]['plt_loc'].append(yPathSaved)
-                lgi("plt saved at:" + str(yPath) ) 
+                lgd("plt saved at: " + str(yPathSaved) ) 
             except:
-                lge('plt not saved to' + str(yPath))
+                lge('plt not saved to ' + str(yPathSaved))
 
     def plt_all(self, yTA5):
         ##### turn off interactive mode 

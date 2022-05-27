@@ -1,6 +1,10 @@
 ############MM
 ## imports
 ##############
+# %%
+from msilib.schema import Property
+from pickle import FALSE, TRUE
+from re import M
 import sys
 
 from sqlalchemy import column
@@ -11,7 +15,8 @@ import talib
 import pandas as pd
 import numpy as np
 import datetime
-import a_Stock_IF
+#import a_Stock_IF
+#import a_OL_IF
 
 
 from logging import debug    as lgd   #10
@@ -22,6 +27,9 @@ from logging import critical as lgc   #50
 
 
 import a_Settings
+
+import win32com.client as win32 
+from win32com.client import constants as C
 
 ###################################
 class Stock:
@@ -67,14 +75,15 @@ class Stock:
 
         #tPlt_Path=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
         #tPlt_Path=r'C:\BTFiles\btgithub1b\TDAAPI\HistoricalData'
-        
+        # no use for ,'SMAPeriod':8   after 'plt_loc':[] ???
         self.TA1={ 'plt_path':a_Settings.URL_plt_path, 
                     'Strategies': {
                                 'SMA':{ 'plt_loc':[]   ,'SMAPeriod':10   },
                                 'RSI': { 'plt_loc':[]  ,'SMAPeriod':10   }, 
                                 'MACD':{ 'plt_loc':[]  ,'SMAPeriod':10   }, 
                                 'BB':  { 'plt_loc':[]  ,'SMAPeriod':10   },
-                                'FinViz':{ 'plt_loc':[],'SMAPeriod':10   }   
+                                'CmprsdBS':{ 'plt_loc':[],'SMAPeriod':10   },
+                                'FinViz':{ 'plt_loc':[] }        
                                 }
                 }
         self.CSV_Path=a_Settings.URL_CVS_file
@@ -99,7 +108,7 @@ class Stock:
                 yDF2=a_TDA_IF.TDA_Price_Hist ( Symbol=self.Symbol, StartDTStamp=ySDate, EndDTStamp=0 )
             
 
-            #from TDA ms Timestamp to panda PST time +11 hours
+            #from TDA ms Timestamp to panda PST time +11 hours, purely for excel table 
             yTDA2PDBias= 28800000 #ms
 
             yDF2['Date']= pd.to_datetime(yDF2['datetime'] + yTDA2PDBias , unit='ms')
@@ -181,15 +190,137 @@ class Stock:
 
         self.load_CmprsdBS()
 
+
+    # 
     def load_CmprsdBS(self):
         df1=self.HistDF['close']
             
-        self.HistDF['CmprsdB']= df1.min() *1.08
-        self.HistDF['CmprsdS']= df1.max() *0.92
-        self.HistDF['Cost']=df1.min() *1.18
+        self.HistDF['CmprsdB']= df1.min()
+        self.HistDF['CmprsdS']= df1.max()
+        self.HistDF['Cost']=df1.min()
 
-
+        lgd(f" set_comprsdX starts")
     
+        ###self.get_OLICompsdBS(self.Symbol, self.HistDF)
+
+        self.set_CmprsdData( "CmprsdS", self.Symbol)
+
+        lgd(" set_comprsdX done")
+
+    # great for testing 
+    def get_OLICompsdBS(self, Sec, DF ):
+        yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
+        yNS = yOL.GetNamespace("MAPI")
+        #yFolder = yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities']
+        yFolder1 =yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities'].Folders['History']
+
+        s1=yFolder1.Items
+        #s1.Sort(Property="[EffDate]", Descending= False )  # 1 is descenting,
+        
+        sFilter=f"[SEC]='{Sec}'"
+        #sFilter="[Subject]=""Test"""
+        ### f1=yFolder1.Items.Restrict(sFilter) #works
+        f1=s1.Restrict(sFilter) #worksunt
+
+        # sort is only effective on preinstalled fields, not on user propterties field, but restrict() can accept user property
+        # false, date sorted from earilest to latest to none; True, from none, Lastest to earlier 
+        f1.Sort(Property="[EffDate]", Descending= True )  
+
+        print ("step1")
+        v1=1 #=f1.GetLast().UserProperties.Find("SEC").Value
+        print ("step2")
+        
+        if (1==1): 
+            z=v1
+            
+        else:
+            z=f1.GetLast().UserProperties.Find("EffDate").Value
+
+        print ("Items", f1.Count, " Sec ", Sec, "search =", {sFilter} , 'first item:', z )     
+
+        ###for yOLI in yFolder1.Items:
+        for yOLI in f1:
+            c1= 1 #yOLI.UserProperties.Find("SEC").Value
+            if (c1 > 0): 
+                #print(f"Sec:{yOLI.UserProperties.Find("SEC").Value} Effect date: {yOLI.UserProperties.Find("EffDate").Value}, price {yOLI.UserProperties.Find("Price").Value}, CmprsdeB= {}   ") 
+                a= yOLI.UserProperties.Find("SEC").Value   
+                b=yOLI.UserProperties.Find("EffDate").Value
+                c=yOLI.UserProperties.Find("Price").Value
+                d=yOLI.UserProperties.Find("CmprsdS").Value
+                e= yOLI.TaskDueDate #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.creationtime
+                f=2 # yOLI.Modified
+                str1=f"Sec1:{a} Effect date:  {b}, {e}, {f}, price123= {c}, CmprsdeB= {d} "
+
+                print (str1)
+
+        #yOL=None
+
+    def set_CmprsdData(self, FieldNm, Sec):
+       
+        yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
+        yNS = yOL.GetNamespace("MAPI")
+        yFolder1 =yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities'].Folders['History']
+       
+        I1=yFolder1.Items
+        
+        #https://docs.microsoft.com/en-us/office/vba/outlook/how-to/search-and-filter/filtering-items
+        # https://docs.microsoft.com/en-us/office/vba/outlook/how-to/search-and-filter/filtering-items-using-a-boolean-comparison
+         #nw:  And  [Due Date] > '" & Format("1/15/20 3:30pm", "ddddd h:nn AMPM") & "'" 
+         # And "[Due Date] IS NULL" actually filter out entries that Due Date is None 
+    
+        # sFilter=  [SEC]='NVDA' And [CmprsdS] >0
+        # result of Not (Not ( [Due Date] IS NULL)) is Due Date has to be not Null (bug on pywin32 ???)
+        sFilter=f"[SEC]='{Sec}' And [{FieldNm}] >0  And Not (Not ( [Due Date] IS NULL)) "
+        #lgd (f"filter = {sFilter}")
+
+        f1=I1.Restrict(sFilter) #work
+        #lgd(" step1 ")
+
+        # sort is only effective on preinstalled fields, not on user propterties field, but restrict() can accept user property
+        # false, date sorted from earilest to latest to none; True, from none, Lastest to earlier 
+        f1.Sort(Property="[Due Date]", Descending= False )  
+
+        print ("Items", f1.Count, " Sec ", Sec, "search =", {sFilter} )     
+
+        for yOLI in f1:
+            #print(f"Sec:{yOLI.UserProperties.Find("SEC").Value} Effect date: {yOLI.UserProperties.Find("EffDate").Value}, price {yOLI.UserProperties.Find("Price").Value}, CmprsdeB= {}   ") 
+            a= yOLI.UserProperties.Find("SEC").Value
+            b=yOLI.UserProperties.Find("EffDate").Value   
+            c=yOLI.UserProperties.Find("Price").Value
+            d=yOLI.UserProperties.Find(FieldNm).Value
+            e= yOLI.TaskDueDate #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.creationtime
+                
+            str1=f"Sec1:{a} Effect/due date: {b}/{e},  price123= {c}, {FieldNm}= {d} "
+            df1=self.HistDF
+            lgd (str1)
+            lgd ( df1.shape)
+            #print (df1)
+
+            # can not use Date, it is an index column
+            yDate3=self.HistDF['datetime'].values[-1]  # nw: yDate.strftime("%m") yDate in Epoch format
+            print (f", type ydate= ", type(yDate3))  #, datetime.datetime.fromtimestamp( 1653022800000).strftime("%m") )
+            lgd (f" due  date: {e};  {datetime.datetime.timestamp(e)} " )
+
+
+            #https://datagy.io/pandas-conditional-column/
+            # x 1000 since TDA timestamp uses ms, and python dt ts uses sec 
+            df1.loc[df1['datetime'] > datetime.datetime.timestamp(e)*1000, 'CmprsdS'] = d
+
+            lgd ("step 2")
+
+
+
+        
+        
+        yOL=None        
+
+
+
+
+
+
+
+    #generate alert for stock obj and later to outlook item 
     def cal_SMA_Alert(self): 
             self.SMA=self.HistDF['SMA1'][-1]  # column 5 is sma , get this latest SMA value to stock object
             if  round(self.SMAState)==1 and float(self.SMA) >= float(self.Price):
@@ -231,4 +362,32 @@ class Stock:
 
         return df
 
-    
+
+# %%
+def test1():
+    df123 = pd.DataFrame(
+        {"a" : [4 ,5, 6], 
+        "b" : [7, 8, 9], 
+        "c" : [10, 11, 12]},    
+        index = [1, 2, 3])
+    print (df123)
+    ### z1=df123['c'].values[-1]
+    ### z1=df123['c'][1]  # works with indexing, =10 
+    #nw z1=df123['c'][-1]
+    #nw z1=df123['c',-1]
+    #nw z1=df123[-1, 'c']
+    #nw z1=df123.iloc['c',-1]
+    #nw z1=df123.iloc[-1, 'c']
+    #nw z1=df123.iloc['c',1]
+    #nw z1=df123.iloc[1,'c']
+    np1=df123['c'].to_numpy()
+    z1=np1[-1]
+    print(f" df type= {type(z1)}, { z1}    ")    
+
+# %% running tests
+if __name__ == '__main__':
+    test1()
+
+
+
+# %%

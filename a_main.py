@@ -33,7 +33,7 @@ from logging import critical as lgc   #50 #
 # step 2, select one of below line 
 import a_logging as alog
 # to customize the logging obj, all format propregate to root logging obj
-lg=alog.BTLogger( stdout_filter=alog.yfilter30, stream_filter=alog.yfilter10)
+lg=alog.BTLogger( stdout_filter=alog.yfilter10, stream_filter=alog.yfilter10)
 
 
 

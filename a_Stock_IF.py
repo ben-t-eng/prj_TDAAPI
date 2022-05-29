@@ -204,10 +204,12 @@ class Stock:
         ###self.get_OLICompsdBS(self.Symbol, self.HistDF)
 
         self.set_CmprsdData( "CmprsdS", self.Symbol)
+        self.set_CmprsdData( "CmprsdB", self.Symbol)
+        self.set_CmprsdData( "Cost", self.Symbol)
 
         lgd(" set_comprsdX done")
 
-    # great for testing 
+    # great for testing , not  for real usage 
     def get_OLICompsdBS(self, Sec, DF ):
         yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
         yNS = yOL.GetNamespace("MAPI")
@@ -271,10 +273,10 @@ class Stock:
         # sFilter=  [SEC]='NVDA' And [CmprsdS] >0
         # result of Not (Not ( [Due Date] IS NULL)) is Due Date has to be not Null (bug on pywin32 ???)
         sFilter=f"[SEC]='{Sec}' And [{FieldNm}] >0  And Not (Not ( [Due Date] IS NULL)) "
-        #lgd (f"filter = {sFilter}")
+        lgd (f"filter = {sFilter}")
 
         f1=I1.Restrict(sFilter) #work
-        #lgd(" step1 ")
+        lgd(" step1 ")
 
         # sort is only effective on preinstalled fields, not on user propterties field, but restrict() can accept user property
         # false, date sorted from earilest to latest to none; True, from none, Lastest to earlier 
@@ -304,7 +306,7 @@ class Stock:
 
             #https://datagy.io/pandas-conditional-column/
             # x 1000 since TDA timestamp uses ms, and python dt ts uses sec 
-            df1.loc[df1['datetime'] > datetime.datetime.timestamp(e)*1000, 'CmprsdS'] = d
+            df1.loc[df1['datetime'] > datetime.datetime.timestamp(e)*1000, f'{FieldNm}'] = d
 
             lgd ("step 2")
 

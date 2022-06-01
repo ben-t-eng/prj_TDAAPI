@@ -142,7 +142,8 @@ for yOLI in yFolder.Items:
     yFV=a_FinViz.FinViz()
     yFV.getChart(yO_S.Stock)
 
-
+    #save hist here so to include TA1 data
+    yO_S.Stock.SaveHist()
 
     # lgi(" before Updating OLI")
 

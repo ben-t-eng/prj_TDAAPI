@@ -280,9 +280,12 @@ class OLI_Stock :
                             lgd( 'plt file ='+ str(file))
                             
                            # yRng.Collapse(Direction=C.wdCollapseStart)
-                           # yRng.Move(Unit=C.wdLine, Count=1 )                            
-                            yRng.InlineShapes.AddPicture(file, False, True)
-                            
+                           # yRng.Move(Unit=C.wdLine, Count=1 )        
+                           # https://docs.microsoft.com/en-us/office/vba/api/word.inlineshapes.addpicture                    
+                            yPic=yRng.InlineShapes.AddPicture(file, True, True)
+                            yPic.ScaleHeight=75
+                            yPic.ScaleWidth=75
+
                             n=n+1
 
                 lgd('Inserted '+ str(n) + ' charts')

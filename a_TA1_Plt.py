@@ -260,6 +260,7 @@ class TA1:
 
 import os
 from matplotlib import pyplot as plt
+import matplotlib.patches as patches
 import numpy as np
 class TA1_Plt:
     def plot_price_and_signals(self, fig, yTA1, yDF, strategy,axs):
@@ -275,6 +276,10 @@ class TA1_Plt:
             if not yDF[f'{strategy}_Sell'].isnull().all():
                 axs[0].scatter(yDF.index, yDF[f'{strategy}_Sell'], color='red', label='Sell Signal', marker='v', alpha=1)
         
+            self.drawEvents(axs, yDF)
+            #nw if not yDF[f'EventLink'].isnull().all():
+            #nw     axs[0].axvline(x=yDF.index, color='green', label='Event', linestyle='--', alpha=1)
+          
             axs[0].plot(yTA1.prices, label='Close Price',color='blue', alpha=0.35)
 
             plt.xticks(rotation=45)
@@ -284,11 +289,23 @@ class TA1_Plt:
             axs[0].legend(loc='upper left')
             axs[0].grid()
 
+    def drawEvents(self, axs,yDF):
+            yDF1= yDF[yDF[f'EventLink'].notnull()]
+            for i in range(0, len(yDF1)):
+                axs[0].axvline(x=yDF1["EventDate"].values[i], url= f"{i}",  color='green', linestyle='--', alpha=1)
+                #https://matplotlib.org/stable/tutorials/text/text_props.html#sphx-glr-tutorials-text-text-props-py
+                yYlow,yYheight=axs[0].set_ylim(auto=True)
+                yYlow,yYheight=axs[0].get_ybound()
+                axs[0].text(x=yDF1["EventDate"].values[i], y=yYlow,  s=f"<{i+1}>", color='green') #, verticalalignment='bottom',transform=axs[0].transAxes)            
+            
+
+
+
     def plot_macd(self, yTA1):
             image = f'images/{yTA1.symbol}_macd.png'
             macd =  yTA1.TAs
             # Create and plot the graph
-            fig, axs = plt.subplots(2, sharex=True, figsize=(8,6))
+            fig, axs = plt.subplots(2, sharex=True, figsize=(12,9))
             self.plot_price_and_signals(fig, yTA1, macd, 'MACD', axs)
             axs[1].plot(macd['MACD'], label=yTA1.symbol+' MACD', color= 'green')
             axs[1].plot(macd['MACD_Signal'], label='Signal Line',color='orange')
@@ -310,7 +327,7 @@ class TA1_Plt:
             low_rsi = 40
             high_rsi = 70
         #plt.style.use('default')
-            fig, axs = plt.subplots(2, sharex=True, figsize=(13, 9))
+            fig, axs = plt.subplots(2, sharex=True, figsize=(12, 9))
             self.plot_price_and_signals(fig, yTA1, rsi, 'RSI', axs)
             axs[1].fill_between(rsi.index, y1=low_rsi, y2=high_rsi, color='#adccff', alpha=0.3)
             axs[1].plot(rsi['RSI'], label='RSI', color='blue',alpha=0.35)
@@ -326,7 +343,7 @@ class TA1_Plt:
             bollinger_bands = yTA1.TAs
 
             
-            fig, axs = plt.subplots(2, sharex=True, figsize=(13, 9))
+            fig, axs = plt.subplots(2, sharex=True, figsize=(12, 9))
 
             self.plot_price_and_signals(fig, yTA1, bollinger_bands, 'Bollinger_Bands', axs)
 
@@ -346,7 +363,7 @@ class TA1_Plt:
             
             sma = yTA1.TAs
             # Create and plot the graph
-            fig, axs = plt.subplots(2, sharex=True, figsize=(13,9))
+            fig, axs = plt.subplots(2, sharex=True, figsize=(12,9))
             self.plot_price_and_signals(fig, yTA1, sma, 'SMA', axs)
             axs[1].plot(sma['SMA'],  label=yTA1.symbol+' SMA', color= 'green')
             axs[1].plot(sma['close'], label='Signal Line',color='orange')
@@ -368,7 +385,7 @@ class TA1_Plt:
             
             
             # Create and plot the graph
-            fig, axs = plt.subplots(2, sharex=True, figsize=(13,9))
+            fig, axs = plt.subplots(2, sharex=True, figsize=(12,9))
             self.plot_price_and_signals(fig, yTA1, yTA1.TAs, 'CmprsdBS', axs)
             axs[1].plot(yTA1.TAs['CmprsdB'],  label=yTA1.symbol+' ComprsdB', color= 'green')
             axs[1].plot(yTA1.TAs['CmprsdS'],  label=yTA1.symbol+' ComprsdS', color= 'red')

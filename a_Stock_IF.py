@@ -119,7 +119,6 @@ class Stock:
 
             self.HistDF=yDF2
             #no need and not safe, self.HistDF= yDF2.iloc[:, 1:] #takes out the firstcolumn of serial numbers, 
-
             ##############################################
             # Date (DT index)  symbol     open       high       low    close      SMA1  \
 
@@ -131,7 +130,8 @@ class Stock:
 
             self.UpdateTA()
 
-            self.SaveHist()
+            # save hist in main() after TA1
+            #self.SaveHist() 
 
             return 1
         except:
@@ -190,11 +190,81 @@ class Stock:
 
         self.load_CmprsdBS()
 
+        self.load_Events()
 
-    # 
+    # load events to HistDF so they are marked on price chart
+    def load_Events(self):
+         # add new columns and fill with the same value    
+        self.HistDF['EventLink']= None #'None'
+        self.HistDF['EventDate']= None
+
+        yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
+        yNS = yOL.GetNamespace("MAPI")
+        yFolder1 =yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities'].Folders['History']
+       
+        I1=yFolder1.Items
+        ySec=self.Symbol
+        
+        #https://docs.microsoft.com/en-us/office/vba/outlook/how-to/search-and-filter/filtering-items
+        # https://docs.microsoft.com/en-us/office/vba/outlook/how-to/search-and-filter/filtering-items-using-a-boolean-comparison
+         #nw:  And  [Due Date] > '" & Format("1/15/20 3:30pm", "ddddd h:nn AMPM") & "'" 
+         # And "[Due Date] IS NULL" actually filter out entries that Due Date is None 
+    
+        # sFilter=  [SEC]='NVDA' And [CmprsdS] >0
+        # result of Not (Not ( [Due Date] IS NULL)) is Due Date has to be not Null (bug on pywin32 ???)
+        sFilter=f"[SEC]='{ySec}' And Not (Not ( [EventDate] IS NULL))  "
+        lgd(" step1 ")
+        yDate3=self.HistDF['datetime'].values[-1]  # nw: yDate.strftime("%m") yDate in Epoch format
+        lgd(f", df datetime type = { type(yDate3)} / { yDate3}" ) 
+        lgd(f" Sec {ySec}, search = {sFilter}" )   
+        f1=I1.Restrict(sFilter) #work
+       
+        lgd(f"Items count {f1.Count}" ) 
+         
+        df1=self.HistDF
+
+        #OL1:\BTHm\0-outlook usage\Test Run Outlook Usage\Securities\History\  [] rsv:02/19/2022 23:08 frm:bentsdjob@outlook.com 
+        for yOLI in f1:
+           
+            d=yOLI.UserProperties.Find("EventDate").Value
+            ### e= yOLI.TaskDueDate #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.creationtime
+                
+            str1=f"Sec1:{ySec} Effect/due date: {d}"
+            
+            lgd (str1)
+            lgd ( df1.shape)
+
+            # can not use Date, it is an index column
+            #yDate3=self.HistDF['datetime'].values[-1]  # nw: yDate.strftime("%m") yDate in Epoch format
+            #lgd(f", type ydate=  {type(yDate3)}')  #, datetime.datetime.fromtimestamp( 1653022800000).strftime("%m") )
+           
+            lgd (f" Event date: {d};  {datetime.datetime.timestamp(d)} " )
+
+            #nw yDBF=d-datetime.timedelta(1) # add one day
+            yDBF1=d.replace(hour=0, minute=0, second=0, microsecond=0 )
+            yDAF=d+datetime.timedelta(1)
+            yDAF1=yDAF.replace(hour=0, minute=0, second=0, microsecond=0 )
+
+            #https://datagy.io/pandas-conditional-column/
+            # x 1000 since TDA timestamp uses ms, and python dt ts uses sec 
+            # df1.loc[df1['datetime'] > datetime.datetime.timestamp(d)*1000, 'EventLink'] = yOLI.EntryID
+            # e.g. df2 = df[(df['category'] != 'A') & (df['value'].between(10,20))]
+            df1.loc[df1['datetime'].between(datetime.datetime.timestamp(yDBF1)*1000, datetime.datetime.timestamp(yDAF1)*1000), 'EventLink' ] = yOLI.EntryID
+            df1.loc[df1['datetime'].between(datetime.datetime.timestamp(yDBF1)*1000, datetime.datetime.timestamp(yDAF1)*1000), 'EventDate' ] = d
+           
+
+            lgd (f"step 2: {d}")
+            
+        
+        #print("debug: df1 =", df1)
+        yOL=None            
+
+
+    #
     def load_CmprsdBS(self):
         df1=self.HistDF['close']
-            
+
+        # add new columns and fill with the same value    
         self.HistDF['CmprsdB']= df1.min()
         self.HistDF['CmprsdS']= df1.max()
         self.HistDF['Cost']=df1.min()
@@ -310,10 +380,6 @@ class Stock:
 
             lgd ("step 2")
 
-
-
-        
-        
         yOL=None        
 
 

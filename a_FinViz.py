@@ -20,7 +20,9 @@ from io import StringIO
 
 class FinViz:
     def __init__(self):
+        # needs update whenever chromebrower is uprevisioned , in a_Settings.py 
         self.executable_path={'executable_path':a_Settings.URL_ChromeDriver }
+        
         self.options=webdriver.ChromeOptions()
         self.options.add_argument("--start-maximized")
         self.options.add_argument("--disable-notifications")
@@ -65,7 +67,9 @@ def getChart2( yStockSymbol, savePath):
              yPath=  a_utils.FilePath(Path=yPath, FileNm=filenm, TimeString='', Suffix='')
              
              #has to match chrome browser revision ,as of 4/09/2022, rev 100
-             yBrowserExe= {'executable_path': abs_path+r'\chromedriver_win32\chromedriver_100.exe'}
+             #5/30/2022 rev102 was installed, forcing your to update chromedriver
+             # for programming, need update at a_setting.py in class FinViz
+             yBrowserExe= {'executable_path': abs_path+r'\chromedriver_win32\chromedriver_102.exe'}
             
             
              #has to match chrome browser revision ,as of 4/09/2022, rev 100=

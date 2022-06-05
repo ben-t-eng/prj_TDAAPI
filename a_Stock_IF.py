@@ -195,8 +195,10 @@ class Stock:
     # load events to HistDF so they are marked on price chart
     def load_Events(self):
          # add new columns and fill with the same value    
-        self.HistDF['EventLink']= None #'None'
+        self.HistDF['EventLink']= None #'None' making it a blank spot when expeort it to excel
         self.HistDF['EventDate']= None
+        self.HistDF['EventSubject']= None
+        
 
         yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
         yNS = yOL.GetNamespace("MAPI")
@@ -227,8 +229,15 @@ class Stock:
         for yOLI in f1:
            
             d=yOLI.UserProperties.Find("EventDate").Value
+
+            if yOLI.Subject is not None:
+                ySubj=yOLI.Subject
+            else:
+                ySubj="Event Date"
+
+            
+
             ### e= yOLI.TaskDueDate #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.creationtime
-                
             str1=f"Sec1:{ySec} Effect/due date: {d}"
             
             lgd (str1)
@@ -249,13 +258,16 @@ class Stock:
             # x 1000 since TDA timestamp uses ms, and python dt ts uses sec 
             # df1.loc[df1['datetime'] > datetime.datetime.timestamp(d)*1000, 'EventLink'] = yOLI.EntryID
             # e.g. df2 = df[(df['category'] != 'A') & (df['value'].between(10,20))]
-            df1.loc[df1['datetime'].between(datetime.datetime.timestamp(yDBF1)*1000, datetime.datetime.timestamp(yDAF1)*1000), 'EventLink' ] = yOLI.EntryID
-            df1.loc[df1['datetime'].between(datetime.datetime.timestamp(yDBF1)*1000, datetime.datetime.timestamp(yDAF1)*1000), 'EventDate' ] = d
-           
+            df2=df1['datetime'].between(datetime.datetime.timestamp(yDBF1)*1000, datetime.datetime.timestamp(yDAF1)*1000)
+            df1.loc[df2, 'EventLink' ] = yOLI.EntryID
+            df1.loc[df2, 'EventDate' ] = d
+            df1.loc[df2, 'EventSubject' ] = ySubj
+
 
             lgd (f"step 2: {d}")
             
         
+
         #print("debug: df1 =", df1)
         yOL=None            
 
@@ -268,6 +280,7 @@ class Stock:
         self.HistDF['CmprsdB']= df1.min()
         self.HistDF['CmprsdS']= df1.max()
         self.HistDF['Cost']=df1.min()
+        self.HistDF['Shares']=np.NaN
 
         lgd(f" set_comprsdX starts")
     
@@ -276,6 +289,9 @@ class Stock:
         self.set_CmprsdData( "CmprsdS", self.Symbol)
         self.set_CmprsdData( "CmprsdB", self.Symbol)
         self.set_CmprsdData( "Cost", self.Symbol)
+
+        #borrow the same routine for setting Cmprsd buy sell data to sec.HistDF
+        self.set_CmprsdData( "Shares", self.Symbol)
 
         lgd(" set_comprsdX done")
 
@@ -328,6 +344,8 @@ class Stock:
         #yOL=None
 
     def set_CmprsdData(self, FieldNm, Sec):
+    #this required outllook "due date"  aka taskduedate in VBA to be set     
+    # fieldnm must be a userproperty in OLI and a numerical number ,e.g. > 0  
        
         yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
         yNS = yOL.GetNamespace("MAPI")
@@ -357,15 +375,15 @@ class Stock:
         for yOLI in f1:
             #print(f"Sec:{yOLI.UserProperties.Find("SEC").Value} Effect date: {yOLI.UserProperties.Find("EffDate").Value}, price {yOLI.UserProperties.Find("Price").Value}, CmprsdeB= {}   ") 
             a= yOLI.UserProperties.Find("SEC").Value
-            b=yOLI.UserProperties.Find("EffDate").Value   
+            #not used b=yOLI.UserProperties.Find("EffDate").Value   
             c=yOLI.UserProperties.Find("Price").Value
             d=yOLI.UserProperties.Find(FieldNm).Value
             e= yOLI.TaskDueDate #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.creationtime
                 
-            str1=f"Sec1:{a} Effect/due date: {b}/{e},  price123= {c}, {FieldNm}= {d} "
+            str1=f"Sec1:{a} Effect/due date: /{e},  price123= {c}, {FieldNm}= {d} "
             df1=self.HistDF
             lgd (str1)
-            lgd ( df1.shape)
+            #lgd ( df1.shape)
             #print (df1)
 
             # can not use Date, it is an index column

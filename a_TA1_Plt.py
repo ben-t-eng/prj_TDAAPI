@@ -13,6 +13,8 @@ from io import StringIO
 #############
 import sys 
 import datetime
+
+from sqlalchemy import null
 import a_utils
 import weakref
 ###############
@@ -71,7 +73,7 @@ class TA1:
     # you don;t need the "y" if this function is declared outside of the Company class
     # this is an instance method, requires "self" as the first arugment in a instance method
     def generate_buy_sell_signals(self, condition_buy, condition_sell, dataframe, strategy):
-        last_signal = None  # text fir indicators
+        last_signal = None  # text for indicators
         indicators = []  # list -> np array -> pd df 
         buy = [] # list -> np array -> pd df 
         sell = [] # list -> np array -> pd df 
@@ -222,16 +224,22 @@ class TA1:
 
             lgd("df2 shape :"+ str(DF2.shape))
             
-            # self.cal_CompressedBSC()  #replaced by   def load_CmprsdBS(self) in a_Stock_IF()
-            # self.load_CmprsdBS(self.TAs) 
+            #NW self.cal_CompressedBSC()  #replaced by   def load_CmprsdBS(self) in a_Stock_IF()
+            #NW self.load_CmprsdBS(self.TAs) 
 
             lgd("df2 shape"+ str( DF2.shape))
             lgd("df2 type"+ str(type(DF2)))
             
-            self.generate_buy_sell_signals(lambda x, DF2: DF2['CmprsdB'].values[x] > DF2['close'].iloc[x] , 
-                                           lambda x, DF2: DF2['CmprsdS'].values[x] < DF2['close'].iloc[x], DF2, 'CmprsdBS')
-            
-        
+            ###self.generate_buy_sell_signals(lambda x, DF2: DF2['CmprsdB'].values[x] < DF2['close'].iloc[x] , 
+            ###                               lambda x, DF2: DF2['CmprsdS'].values[x] > DF2['close'].iloc[x], DF2, 'CmprsdBS')
+            ##self.generate_buy_sell_signals(lambda x, DF2: DF2['CmprsdB'].values[x] > DF2['close'].values[x] , 
+            ##                             lambda x, DF2: DF2['CmprsdS'].values[x] < DF2['close'].values[x], DF2, 'CmprsdBS')
+
+            self.calCmprsdBSSignal("CmprsdBS", "Buy", DF2 ,lambda i, DF2: DF2['close'].values[i] > DF2['CmprsdB'].values[i] )    
+            self.calCmprsdBSSignal("CmprsdBS", "Sell",DF2 ,lambda i, DF2: DF2['close'].values[i] < DF2['CmprsdS'].values[i] )
+            #a must to be able to use plot_price_and_signals(self, fig, yTA1, yDF, strategy,axs)
+            DF2['CmprsdBS_Last_Signal'] = "N/A"
+
             lgd("after gen_buy_sell_signal"+ str(self.TAs.shape))
             return DF2         
 
@@ -247,9 +255,51 @@ class TA1:
             self.TAs['CmprsdS']= df1.max() *0.92
             self.TAs['Cost']=df1.min() *1.18
 
+    def calCmprsdBSSignal(self, sFieldNm,  yAction, yDF1, yLmdFunc):
 
+       
+        
+        last_signal = "Ready"  # text for indicators
+        indicators = []  # list -> np array -> pd df 
+        action = [] # list -> np array -> pd df 
+        value1=[]
+        value2=[]
+        value3=[]
 
+        yColumn=f"CmprsdS" if yAction=='Buy' else f"CmprsdB"
 
+        yDF=self.TAs  #just use DF2 as alias of teh TAs Dataframe object
+        yFilter=f" yDF[\"{sFieldNm}\"].notnull() "
+        lgd(f"filer = {yFilter}")
+        ### dataframe=yDF[ yDF["CmprsdB"].notnull()]   
+        dataframe=yDF1
+        lgd(f"DF shape = {dataframe.shape}")
+
+        #assuming DF is sorted ascending by Datetime Index  
+        for i in range(0, len(dataframe)):
+            if  yLmdFunc(i, dataframe) and last_signal !="Triggered": 
+                last_signal = "Triggered"
+                indicators.append("Activated")
+                action.append(dataframe['close'].iloc[i])
+            elif   yLmdFunc(i, dataframe) and last_signal =="Triggered":
+                    indicators.append("Activated")
+                    action.append(np.nan)
+
+            else:
+                last_signal="Ready"
+                indicators.append("Deactivated")
+                action.append(np.nan)
+
+            value1.append(dataframe['close'].iloc[i])
+            value2.append(dataframe[yColumn].values[i])
+               
+
+        yDF[f'{sFieldNm}_Last_Signal'] = last_signal
+        yDF[f'{sFieldNm}_{yAction}_Indicator'] = np.array(indicators)
+        yDF[f'{sFieldNm}_{yAction}'] = np.array(action)
+        yDF[f'{sFieldNm}__{yAction}_close'] = np.array(value1)
+        yDF[f'{sFieldNm}_{yAction}_values'] = np.array(value2)
+        
 
 # %%
 # plotting 
@@ -264,8 +314,11 @@ import matplotlib.patches as patches
 import numpy as np
 class TA1_Plt:
     def plot_price_and_signals(self, fig, yTA1, yDF, strategy,axs):
+            
             last_signal_val = yDF[f'{strategy}_Last_Signal'].values[-1]
+            lgd(f"last BS signal is {last_signal_val}")
             last_signal = 'Unknown' if not last_signal_val else last_signal_val
+            lgd(f"last signal is {last_signal}")
         
             title = f'Close Price Buy/Sell Signals using {strategy}.Last Signal: {last_signal}'
             fig.suptitle(f'Top: {yTA1.symbol} Stock Price. Bottom:{strategy}')
@@ -276,12 +329,16 @@ class TA1_Plt:
             if not yDF[f'{strategy}_Sell'].isnull().all():
                 axs[0].scatter(yDF.index, yDF[f'{strategy}_Sell'], color='red', label='Sell Signal', marker='v', alpha=1)
         
+           
+          
+            axs[0].plot(yDF.index, yTA1.prices, label='Close Price',color='blue', alpha=0.35)
+
+            # 20220603 have to be after the plot, so to have the x,y axes setup 
             self.drawEvents(axs, yDF)
+            
             #nw if not yDF[f'EventLink'].isnull().all():
             #nw     axs[0].axvline(x=yDF.index, color='green', label='Event', linestyle='--', alpha=1)
           
-            axs[0].plot(yTA1.prices, label='Close Price',color='blue', alpha=0.35)
-
             plt.xticks(rotation=45)
             axs[0].set_title(title)
             axs[0].set_xlabel('Date', fontsize=18)
@@ -289,15 +346,27 @@ class TA1_Plt:
             axs[0].legend(loc='upper left')
             axs[0].grid()
 
-    def drawEvents(self, axs,yDF):
+    def drawEvents(self, axs, yDF):
             yDF1= yDF[yDF[f'EventLink'].notnull()]
+
+            lgd(f"DF1 = {yDF1.shape} " )
             for i in range(0, len(yDF1)):
+
+                yDT=yDF1["EventDate"].values[i].strftime("%m/%d/%y")
+                lgd(f" event date= {yDT} ")
+                
+                
                 axs[0].axvline(x=yDF1["EventDate"].values[i], url= f"{i}",  color='green', linestyle='--', alpha=1)
+               
+                lgd(f" step 1")
                 #https://matplotlib.org/stable/tutorials/text/text_props.html#sphx-glr-tutorials-text-text-props-py
                 yYlow,yYheight=axs[0].set_ylim(auto=True)
                 yYlow,yYheight=axs[0].get_ybound()
-                axs[0].text(x=yDF1["EventDate"].values[i], y=yYlow,  s=f"<{i+1}>", color='green') #, verticalalignment='bottom',transform=axs[0].transAxes)            
-            
+                lgd(f" step 2")
+                axs[0].text(x=yDF1["EventDate"].values[i], y=yYlow-10,  s=f"<{i+1}> {yDT}", color='green',  verticalalignment='bottom', horizontalalignment='right' , rotation=45) # transform=axs[0].transAxes)            
+                lgd(f" step 3")
+               # axs[0].text(x=yDF1["EventDate"].values[i], y=yYlow,  s=f"<{i+1}>", color='green', rotation=45)
+
 
 
 
@@ -386,15 +455,24 @@ class TA1_Plt:
             
             # Create and plot the graph
             fig, axs = plt.subplots(2, sharex=True, figsize=(12,9))
-            self.plot_price_and_signals(fig, yTA1, yTA1.TAs, 'CmprsdBS', axs)
-            axs[1].plot(yTA1.TAs['CmprsdB'],  label=yTA1.symbol+' ComprsdB', color= 'green')
-            axs[1].plot(yTA1.TAs['CmprsdS'],  label=yTA1.symbol+' ComprsdS', color= 'red')
-            axs[1].plot(yTA1.TAs['Cost'],  label=yTA1.symbol+' Cost', color= 'black')
-            axs[1].plot(yTA1.TAs['close'],  label=yTA1.symbol+' price', color= 'blue')
+            yBSH=yTA1.TAs
+            self.plot_price_and_signals(fig, yTA1, yBSH, 'CmprsdBS', axs)
+
+
+            axs[1].plot(yTA1.TAs['CmprsdB'],  label=' ComprsdB', color= 'green')
+            axs[1].plot(yTA1.TAs['CmprsdS'],  label=' ComprsdS', color= 'red')
+            axs[1].plot(yTA1.TAs['Cost'],  label=' Cost', color= 'black')
+            axs[1].plot(yTA1.TAs['close'],  label=' price', color= 'blue')
+
+            
+           
+            # 2nd y axis
+            y2ndY=axs[1].twinx()
+            y2ndY.plot(yTA1.TAs.index, yTA1.TAs['Shares'],  label=yTA1.symbol+' Shares', color= 'brown')
+            y2ndY.set_ylabel("Shares")
 
             axs[1].legend(loc='upper left')
             axs[1].grid()
-           
                  
             # save image before the show
             self.save_plot(yTA1, 'CmprsdBS', plt )

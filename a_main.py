@@ -134,16 +134,16 @@ for yOLI in yFolder.Items:
     #print("ta3=", yTA3.TAs)
     yPlt=a_TA1_Plt.TA1_Plt()    
 
-
+    yO_S.Stock.SaveHist()
     yPlt.plt_all(yTA3)
 
    
-  #get plot from FinViz.com
+    #get plot from FinViz.com
     yFV=a_FinViz.FinViz()
     yFV.getChart(yO_S.Stock)
 
     #save hist here so to include TA1 data
-    yO_S.Stock.SaveHist()
+    ###yO_S.Stock.SaveHist()
 
     # lgi(" before Updating OLI")
 
@@ -151,6 +151,7 @@ for yOLI in yFolder.Items:
     
     yOLI.Save()
     
+    #so to save a new copy to /history/ folder
     #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.copy
     yOLI1=yOLI.Copy()
     yOLI1.Move(yFolder1)

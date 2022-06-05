@@ -6,6 +6,7 @@
 
 # %%
 ## imports
+from email.headerregistry import Address
 import win32com.client as win32
 from win32com.client import constants as C
 import datetime 
@@ -177,11 +178,9 @@ class OLI_Stock :
             #move to doc top
             yRng.Move(Unit=C.wdStory, Count=-1) #w, perfectly and one step!  
 
-           
-            
 
             #insert content
-            yWDoc.Tables.Add(Range=ySel.Range, NumRows=3, NumColumns=1,
+            yWDoc.Tables.Add(Range=ySel.Range, NumRows=5, NumColumns=1,
                                 DefaultTableBehavior=C.wdWord9TableBehavior, AutoFitBehavior=C.wdAutoFitFixed)
 
             yWDoc.Tables(yWDoc.Tables.Count).Title = "Update"
@@ -190,37 +189,41 @@ class OLI_Stock :
             #first cell with time and date 
             yTString="Charts for " + self.Stock.Symbol +"; Created at: " + datetime.datetime.now().strftime('%x;  %X') + yMsg
            
-
             yRng =yWDoc.Characters(1)
             yRng.InsertBefore( yTString )
 
+
+            ################################################
             #print (type(ySel)) 
             #2nd cell with Stock.comment 
+            ySel=yWDoc.Windows(1).Selection 
+            ySel.Collapse()
+            yRng=ySel.Range
             
             yRng.Collapse(Direction=C.wdCollapseStart)
-            yRng.Move(Unit=C.wdCell, Count=1 )  # when you have single column , this moves to the cell below 
+            yRng.Move(Unit=C.wdCell, Count=4 )  # when you have single column , this moves to the cell below 
             
             self.Stock.Comment=self.lg.log_StringIO.getvalue()
             ### self.Stock.Comment=logging.log_StringIO.getvalue()
             #lgd("Comment="+ self.Stock.Comment)
-
             yRng.InsertBefore(self.Stock.Comment)
 
+            ##############################################
             ySel=yWDoc.Windows(1).Selection 
             ySel.Collapse()
             yRng=ySel.Range
-            yRng.Collapse(Direction=C.wdCollapseStart)
-            yRng.Move(Unit=C.wdCell, Count=1 )
-            
-           
-            # file=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug\GOOG\GOOG_SMA_04_25_21.png'
-           
 
+            yRng.Collapse(Direction=C.wdCollapseStart)
+            yRng.Move(Unit=C.wdCell, Count=3 )
+            # file=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug\GOOG\GOOG_SMA_04_25_21.png'
             self.InsertImage(yRng)
 
-           
+            ##################################################
+            lgd(" before insert events")
+            self.insertEvents(yWDoc)
 
-            lgi("completed")
+
+            lgd("completed")
 
             
         except: 
@@ -232,6 +235,52 @@ class OLI_Stock :
             yInsp.Close(C.olSave) #nw, no need 
             #self.OLI.Save()   # to call in main loop
             lgd("OLIUpdate finally closed at: ")
+
+    def insertEvents1(self):
+        lgd(f" step 0")
+
+    def insertEvents(self, yWDoc):
+        
+        lgd(f" step 0")          
+        ySel=yWDoc.Windows(1).Selection 
+        ySel.Collapse()
+        yRng=ySel.Range
+
+        #https://docs.microsoft.com/en-us/office/vba/api/word.wdunits
+        yRng.Collapse(Direction=C.wdCollapseStart)
+        yRng.Move(Unit=C.wdCell, Count=1 )
+        yRng.InsertAfter("Comment or URL: ")
+   
+        #lgd(f" step 1")
+        yDF=self.Stock.HistDF
+      
+        #lgd("df shape"+ str( yDF.shape))
+        #ySec=self.stock.HistDF.Symbol
+        yDF1=yDF[yDF["EventLink"].notnull() ]
+        
+        
+        lgd(f" DF count = {len(yDF1)}")
+
+        for i in range(0, len(yDF1)):
+            yOLIID=yDF1["EventLink"].values[i]   
+            yDT=yDF1["EventDate"].values[i]
+            yEvSubj=yDF1["EventSubject"].values[i]
+            #from stock.HistDF to excel, EventDate is a datetime object, 
+            yDTStr=yDT.strftime("%Y_%m_%d-%H_%M")
+
+            lgd(f"TextToDisplay=<{i}>-{yDTStr}")
+
+            yRng.Collapse(Direction=C.wdCollapseEnd)
+            yRng.InsertBreak(C.wdLineBreak)  # https://docs.microsoft.com/en-us/office/vba/api/word.wdbreaktype
+            yRng.InsertAfter("New")
+            # https://docs.microsoft.com/en-us/office/vba/api/word.hyperlinks.add
+            yHL=yWDoc.Hyperlinks.Add(Anchor=yRng, Address=f"Outlook:{yOLIID}", TextToDisplay=f"<{i+1}> {yEvSubj} :{yDTStr} ") 
+                
+            
+            yRng=yHL.Range
+ 
+
+
 
 
     def SetOLIUsrProp(self, Fieldnm, Value, FieldType=1):
@@ -345,6 +394,7 @@ class OLI_Stock :
 
 
 #########################################################################
+
 # %%
 # testing module functiions
 # https://docs.python.org/3/library/datetime.html#date-objects

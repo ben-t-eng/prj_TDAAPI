@@ -56,9 +56,14 @@ class OLI_Stock :
         self.Stock.HistStartDate=a_utils.epoch_from_today( Yr=1, Mo=0, Day=0) 
 
         
-        self.Stock.SMAState= self.Get_OLI_UsrP_Value('SMAState', 0)
-        self.Stock.SMAAlert=self.Get_OLI_UsrP_Value('SMAAlert', 0)      
-        self.Stock.SMADays=self.Get_OLI_UsrP_Value('SMADays', 10)
+        self.Stock.TA1['Strategies']['SMA']['Params']["State"]= self.Get_OLI_UsrP_Value('SMAState', 
+                        self.Stock.TA1['Strategies']['SMA']['Params']["State"])
+
+        self.Stock.TA1['Strategies']['SMA']['Params']["Alert"]= self.Get_OLI_UsrP_Value('SMAAlert', 
+                        self.Stock.TA1['Strategies']['SMA']['Params']["Alert"])
+
+        self.Stock.TA1['Strategies']['SMA']["Params"]["Period"]= self.Get_OLI_UsrP_Value('SMAPeriod', 
+                        self.Stock.TA1['Strategies']['SMA']['Params']["Period"])  
 
         lgi('initStock() '+ self.Stock.Symbol + ' done')
 
@@ -82,24 +87,27 @@ class OLI_Stock :
             lgd('UpdateOLIFields() OK1a')
 
             #yOLI.UserProperties.Find("SMAState").Value=yStock.SMAState
-            self.SetOLIUsrProp( "SMAState", self.Stock.SMAState , C.olNumber)
+            self.SetOLIUsrProp( "SMAState", self.Stock.TA1['Strategies']['SMA']['Params']['State'] , C.olNumber)
             
             lgd('UpdateOLIFields() OK2')    
             #yOLI.UserProperties.Find("SMAAlert").Value=yStock.SMAAlert
-            self.SetOLIUsrProp("SMAAlert", self.Stock.SMAAlert , C.olNumber)
+            self.SetOLIUsrProp("SMAAlert", self.Stock.TA1['Strategies']['SMA']['Params']['Alert'], C.olNumber)
             
             
             lgd('UpdateOLIFields() OK3')
-            yDT5=a_utils.DateTime2UTC4OLI(self.Stock.SMADate)
+            yDT5=a_utils.DateTime2UTC4OLI(self.Stock.TA1['Strategies']['SMA']['Params']['Date'])
             ### yDT5=self.Stock.SMADate # GMT time, 
+            lgd(f"yDT5 is {yDT5} ")
+            
             if yDT5 != None:
-                self.SetOLIUsrProp("SMADate", yDT5 , C.olDateTime)
+                #self.SetOLIUsrProp("SMADate", yDT5 , C.olDateTime)
+                self.SetOLIUsrProp( "SMADate", yDT5 , C.olDateTime)
                 self.SetOLIUsrProp("PriceDate", yDT5, C.olDateTime)
                 lgd('UpdateOLIFields() OK4')
             
 
            
-            self.SetOLIUsrProp("SMA", self.Stock.SMA , C.olCurrency)
+           
 
 
             lgd('UpdateOLIFields() OK5')
@@ -110,13 +118,20 @@ class OLI_Stock :
             #yOLI.UserProperties.Find("Volume").Value=yStock.Volume
             self.SetOLIUsrProp("Volume", self.Stock.Volume , C.olNumber)
 
-            lgd('UpdateOLIFields() OK7')
-            self.SetOLIUsrProp( "SMADays", self.Stock.SMADays , C.olNumber)
+            lgd('UpdateOLIFields() OK7') 
+            self.SetOLIUsrProp("SMA", self.Stock.SMA , C.olCurrency)
+            self.SetOLIUsrProp( "SMAState", self.Stock.TA1['Strategies']['SMA']['Params']["State"] , C.olNumber)
+            self.SetOLIUsrProp( "SMAAlert", self.Stock.TA1['Strategies']['SMA']['Params']["Alert"] , C.olNumber)
+            self.SetOLIUsrProp( "SMAPeriod", self.Stock.TA1['Strategies']['SMA']["Params"]["Period"], C.olNumber)
+            
+           
+
+ 
 
             # outlook userproperty stores time in GMT (UTC), when set, it auto change to UTC by know system time is PST 
             # therefore add 6-7 hours ( ahead) 
-            
-            lgd('UpdateOLIFields() OK8')
+            sma_dict=str(self.Stock.TA1['Strategies']['SMA']['Params'])
+            lgd(f'UpdateOLIFields() OK8 {sma_dict}; ydt5={yDT5}')
             #https://docs.microsoft.com/en-us/office/vba/api/outlook.oluserpropertytype
             #https://docs.microsoft.com/en-us/office/vba/api/outlook.timezone.standardbias
 
@@ -126,7 +141,13 @@ class OLI_Stock :
             self.SetOLIUsrProp( "LSUDate", a_utils.DateTime2UTC4OLI(datetime.datetime.now()) , C.olDateTime)       #last success update date
             ###self.SetOLIUsrProp( "LSUDate", datetime.datetime.now() , C.olDateTime)
 
+            #########################20220607
+            ## when run cell returns with "RPC server not found" or other msg NOT from python exception msg 
+            ## it is likely the issue is with outlook addin setting of 
+            
             self.OLI.Save()
+
+
         except:
             lge(' UpdateOLIFields() not completed ' )
 
@@ -274,7 +295,7 @@ class OLI_Stock :
             yRng.InsertBreak(C.wdLineBreak)  # https://docs.microsoft.com/en-us/office/vba/api/word.wdbreaktype
             yRng.InsertAfter("New")
             # https://docs.microsoft.com/en-us/office/vba/api/word.hyperlinks.add
-            yHL=yWDoc.Hyperlinks.Add(Anchor=yRng, Address=f"Outlook:{yOLIID}", TextToDisplay=f"<{i+1}> {yEvSubj} :{yDTStr} ") 
+            yHL=yWDoc.Hyperlinks.Add(Anchor=yRng, Address=f"Outlook:{yOLIID}", TextToDisplay=f"<{i+1}> {yEvSubj}: {yDTStr} ") 
                 
             
             yRng=yHL.Range

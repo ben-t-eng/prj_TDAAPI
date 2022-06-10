@@ -148,7 +148,7 @@ class TA1:
 
         lgd("get_sma():df2 shape :"+ str(DF2.shape))
         
-        SMAPeriod=self.container.SMADays 
+        SMAPeriod=self.Stock.self.Stock.TA1['Strategies']['SMA']["Params"]["SMAPeriod"]
         #print(" ------------self.container SMMADays= ", SMAPeriod )
         ySMA=talib.SMA(close_prices, timeperiod=SMAPeriod)
         DF2['SMA']=ySMA     #add new column to 

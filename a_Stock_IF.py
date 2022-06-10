@@ -49,16 +49,18 @@ class Stock:
 
         self.StockBeta=1
 
-        self.SMADays=10
+        ##################################################
+        self.SMADayss=10
         self.SMAAlert=0
         self.SMAState=0 # above or below
         self.SMA=0
         self.SMADate=None  #datetime obj
-        self.SMA_D={'Period': 10, 'Alert':1, 'State':0, 'Value':0, 'Date':None}
+        self.SMA_D={'Period': 10, 'Alert':1, 'State':0, 'Value':0, 'Date':None}  #not utilitized
         
         self.MACD={'Slow_Window':26, 'Fast_Window':12, 'Signal':9}
         self.RSI={'High':70 , 'Low':40 }
         self.BB={'Window':20}  #Bollinger Bands
+        ####################################################
 
         self.Broker=''
         self.Shares=0
@@ -75,15 +77,15 @@ class Stock:
 
         #tPlt_Path=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
         #tPlt_Path=r'C:\BTFiles\btgithub1b\TDAAPI\HistoricalData'
-        # no use for ,'SMAPeriod':8   after 'plt_loc':[] ???
+        # not utilized ,'SMAPeriod':8   after 'plt_loc':[] ???
         self.TA1={ 'plt_path':a_Settings.URL_plt_path, 
                     'Strategies': {
-                                'SMA':{ 'plt_loc':[]   ,'SMAPeriod':10   },
-                                'RSI': { 'plt_loc':[]  ,'SMAPeriod':10   }, 
-                                'MACD':{ 'plt_loc':[]  ,'SMAPeriod':10   }, 
-                                'BB':  { 'plt_loc':[]  ,'SMAPeriod':10   },
-                                'CmprsdBS':{ 'plt_loc':[],'SMAPeriod':10   },
-                                'FinViz':{ 'plt_loc':[] }        
+                                'SMA':{ 'plt_loc':[]   , "Params":{'Period': 10, 'Alert':1, 'State':0, 'Value':0, 'Date':None} },
+                                'RSI': { 'plt_loc':[]  , "Params":{'High':70 , 'Low':40 }   }, 
+                                'MACD':{ 'plt_loc':[]  , "Params":{'Slow_Window':26, 'Fast_Window':12, 'Signal':9}  }, 
+                                'Bollinger_Bands':  { 'plt_loc':[]  , "Params":{'Window':20}   },
+                                'CmprsdBS':{ 'plt_loc':[]  , "Params":{'Date':None} },
+                                'FinViz':{ 'plt_loc':[] , "Params":{'Date':None}}        
                                 }
                 }
         self.CSV_Path=a_Settings.URL_CVS_file
@@ -141,8 +143,10 @@ class Stock:
 
     def UpdateTA(self):
         lgd('UpdateTA()')
-        
-        SMAPeriod=self.SMADays
+        #                       ['Strategies']['SMA']['Params']['Period']   
+        SMAPeriod=self.TA1['Strategies']['SMA']['Params']['Period']
+        lgd("first read from dictionary")
+
         if SMAPeriod > 100 or SMAPeriod < 1 :
             SMAPeriod =10 
             lgi("SMADays is out of range of 1 to 100, reset to 10; ") 
@@ -183,6 +187,7 @@ class Stock:
         ## 4/7/22 self.PriceDate=self.HistDF['datetime'][-1]
         
         self.SMADate=self.PriceDate
+        self.TA1['Strategies']['SMA']["Params"]["Date"]=a
 
         #lgi(" ppp updated price=" + str(self.Price) +' volume=' +str(self.Volume) + 
         #    ' date=' + str(self.PriceDate) + ' SMA=' + str(self.SMA))
@@ -231,7 +236,7 @@ class Stock:
             d=yOLI.UserProperties.Find("EventDate").Value
 
             if yOLI.Subject is not None:
-                ySubj=yOLI.Subject
+                ySubj=yOLI.Subject + " Event Date"
             else:
                 ySubj="Event Date"
 
@@ -277,9 +282,9 @@ class Stock:
         df1=self.HistDF['close']
 
         # add new columns and fill with the same value    
-        self.HistDF['CmprsdB']= df1.min()
-        self.HistDF['CmprsdS']= df1.max()
-        self.HistDF['Cost']=df1.min()
+        self.HistDF['CmprsdB']= np.NaN # df1.min()
+        self.HistDF['CmprsdS']= np.NaN #df1.max()
+        self.HistDF['Cost']=np.NaN #df1.min()
         self.HistDF['Shares']=np.NaN
 
         lgd(f" set_comprsdX starts")
@@ -409,23 +414,23 @@ class Stock:
     #generate alert for stock obj and later to outlook item 
     def cal_SMA_Alert(self): 
             self.SMA=self.HistDF['SMA1'][-1]  # column 5 is sma , get this latest SMA value to stock object
-            if  round(self.SMAState)==1 and float(self.SMA) >= float(self.Price):
-                self.SMAAlert = -1
-                self.SMAState =0  
+            if  round(self.TA1['Strategies']['SMA']["Params"]["State"])==1 and float(self.SMA) >= float(self.Price):
+                self.TA1['Strategies']['SMA']["Params"]["Alert"] = -1
+                self.TA1['Strategies']['SMA']["Params"]["State"] =0  
                 
                 lgi( "SMA Alert: price dropped below SMA")
 
-            elif round(self.SMAState)==0 and float(self.SMA) < float(self.Price):
-                self.SMAAlert = 1
-                self.SMAState =1 
+            elif round(self.TA1['Strategies']['SMA']["Params"]["State"])==0 and float(self.SMA) < float(self.Price):
+                self.TA1['Strategies']['SMA']["Params"]["Alert"] = 1
+                self.TA1['Strategies']['SMA']["Params"]["State"] =1 
                 
                 lgi("SMA Alert: price rose above SMA"+'; ')
             else:
-                self.SMAAlert = 0
+                self.TA1['Strategies']['SMA']["Params"]["Alert"] = 0
                 self.Comment=self.Comment + "SMA Alert reset since no change since last update" +'; ' 
                 
                 lgi("updated price=" + str(self.Price) +' volume=' +str(self.Volume) + 
-                    'SMAdate=' + str(self.SMADate) + ' SMA=' + str(self.SMA) )
+                    'SMAdate=' + str(self.TA1['Strategies']['SMA']["Params"]["Date"]) + ' SMA=' + str(self.SMA) )
 
 
     def SaveHist(self):
@@ -476,4 +481,18 @@ if __name__ == '__main__':
 
 
 
+# %%
+if __name__ == '__main__':
+    TA1={ 'plt_path':"a_Settings.URL_plt_path", 
+                    'Strategies': {
+                                'SMA':{ 'plt_loc':[]   , "Params":{'Period': 10, 'Alert':1, 'State':0, 'Value':0, 'Date':None} },
+                                'RSI': { 'plt_loc':[]     }, 
+                                'MACD':{ 'plt_loc':[]     }, 
+                                'BB':  { 'plt_loc':[]     },
+                                'CmprsdBS':{ 'plt_loc':[]   },
+                                'FinViz':{ 'plt_loc':[] }        
+                                }
+                }
+
+    print (f"{TA1['Strategies']['SMA']['Params']['Period']}")            
 # %%

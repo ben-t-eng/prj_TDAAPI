@@ -142,10 +142,10 @@ class TA1:
 
         lgd("get_sma():df2 shape :"+ str(DF2.shape))
         
-        SMAPeriod=self.container.SMADays 
+        SMAPeriod=self.container.TA1['Strategies']['SMA']["Params"]["Period"]
         #print(" ------------self.container SMMADays= ", SMAPeriod )
         ySMA=talib.SMA(close_prices, timeperiod=SMAPeriod)
-        DF2['SMA']=ySMA     #add new column to 
+        DF2['SMA']=ySMA     #add new column to DF, which already has SMA1 from a_stock_IF, 
         #print (ySMA)
         lgd("get_sma():df2 shape"+ str( DF2.shape))
         lgd("get_sma():df2 type"+ str(type(DF2)))
@@ -266,7 +266,7 @@ class TA1:
         value2=[]
         value3=[]
 
-        yColumn=f"CmprsdS" if yAction=='Buy' else f"CmprsdB"
+        
 
         yDF=self.TAs  #just use DF2 as alias of teh TAs Dataframe object
         yFilter=f" yDF[\"{sFieldNm}\"].notnull() "
@@ -291,14 +291,14 @@ class TA1:
                 action.append(np.nan)
 
             value1.append(dataframe['close'].iloc[i])
-            value2.append(dataframe[yColumn].values[i])
+        #    value2.append(dataframe[yColumn].values[i])
                
 
         yDF[f'{sFieldNm}_Last_Signal'] = last_signal
         yDF[f'{sFieldNm}_{yAction}_Indicator'] = np.array(indicators)
         yDF[f'{sFieldNm}_{yAction}'] = np.array(action)
         yDF[f'{sFieldNm}__{yAction}_close'] = np.array(value1)
-        yDF[f'{sFieldNm}_{yAction}_values'] = np.array(value2)
+        #yDF[f'{sFieldNm}_{yAction}_values'] = np.array(value2)
         
 
 # %%
@@ -320,17 +320,29 @@ class TA1_Plt:
             last_signal = 'Unknown' if not last_signal_val else last_signal_val
             lgd(f"last signal is {last_signal}")
         
-            title = f'Close Price Buy/Sell Signals using {strategy}.Last Signal: {last_signal}'
+            yParam=str(yTA1.container.TA1['Strategies'][strategy]['Params'])
+            title = f' {strategy} {yParam} ; Last Signal: {last_signal}'
             fig.suptitle(f'Top: {yTA1.symbol} Stock Price. Bottom:{strategy}')
 
-            if not yDF[f'{strategy}_Buy'].isnull().all():
+            yDFSS=not yDF[f'{strategy}_Buy'].isnull().all()
+            yDFa=yDF[yDF[f'{strategy}_Buy'].notnull() ]
+            if yDFSS:
                 axs[0].scatter(yDF.index, yDF[f'{strategy}_Buy'], color='green', label='Buy Signal', marker='^', alpha=1)
-
-            if not yDF[f'{strategy}_Sell'].isnull().all():
+                for i in range(0, len(yDFa)):
+                    yDTa=yDFa.index.array[i].strftime("%m%d")
+                    axs[0].text(yDFa.index.array[i], yDFa[f'{strategy}_Buy'].values[i],  s=f"{yDTa}", rotation=45, color='green')
+            ##if not yDF[f'{strategy}_Sell'].isnull().all():
+            ##    axs[0].scatter(yDF.index, yDF[f'{strategy}_Sell'], color='red', label='Sell Signal', marker='v', alpha=1)
+                #axs[0].text(yDF.index, yDF[f'{strategy}_Sell'],  s=f" 123 ", color='green' , rotation=45)
+            yDFSS=not yDF[f'{strategy}_Sell'].isnull().all()
+            yDFa=yDF[yDF[f'{strategy}_Sell'].notnull() ]
+            if yDFSS:
                 axs[0].scatter(yDF.index, yDF[f'{strategy}_Sell'], color='red', label='Sell Signal', marker='v', alpha=1)
-        
-           
+                for i in range(0, len(yDFa)):
+                    yDTa=yDFa.index.array[i].strftime("%m%d")
+                    axs[0].text(yDFa.index.array[i], yDFa[f'{strategy}_Sell'].values[i],  s=f"{yDTa}", rotation=45, color='red')
           
+
             axs[0].plot(yDF.index, yTA1.prices, label='Close Price',color='blue', alpha=0.35)
 
             # 20220603 have to be after the plot, so to have the x,y axes setup 
@@ -341,8 +353,8 @@ class TA1_Plt:
           
             plt.xticks(rotation=45)
             axs[0].set_title(title)
-            axs[0].set_xlabel('Date', fontsize=18)
-            axs[0].set_ylabel('Close Price', fontsize=18)
+            #axs[0].set_xlabel(f'Top: {yTA1.symbol} Stock Price. Bottom:{strategy}', fontsize=12)
+            axs[0].set_ylabel('Close Price', fontsize=12)
             axs[0].legend(loc='upper left')
             axs[0].grid()
 
@@ -352,18 +364,18 @@ class TA1_Plt:
             lgd(f"DF1 = {yDF1.shape} " )
             for i in range(0, len(yDF1)):
 
-                yDT=yDF1["EventDate"].values[i].strftime("%m/%d/%y")
+                yDT=yDF1["EventDate"].values[i].strftime("%m%d")
                 lgd(f" event date= {yDT} ")
                 
                 
-                axs[0].axvline(x=yDF1["EventDate"].values[i], url= f"{i}",  color='green', linestyle='--', alpha=1)
+                axs[0].axvline(x=yDF1["EventDate"].values[i], url= f"{i}",  color='brown', linestyle='--', alpha=1)
                
                 lgd(f" step 1")
                 #https://matplotlib.org/stable/tutorials/text/text_props.html#sphx-glr-tutorials-text-text-props-py
                 yYlow,yYheight=axs[0].set_ylim(auto=True)
                 yYlow,yYheight=axs[0].get_ybound()
                 lgd(f" step 2")
-                axs[0].text(x=yDF1["EventDate"].values[i], y=yYlow-10,  s=f"<{i+1}> {yDT}", color='green',  verticalalignment='bottom', horizontalalignment='right' , rotation=45) # transform=axs[0].transAxes)            
+                axs[0].text(x=yDF1["EventDate"].values[i], y=yYlow-10,  s=f"<{i+1}>{yDT}", color='brown',  verticalalignment='bottom', horizontalalignment='left' , rotation=45) # transform=axs[0].transAxes)            
                 lgd(f" step 3")
                # axs[0].text(x=yDF1["EventDate"].values[i], y=yYlow,  s=f"<{i+1}>", color='green', rotation=45)
 
@@ -459,17 +471,17 @@ class TA1_Plt:
             self.plot_price_and_signals(fig, yTA1, yBSH, 'CmprsdBS', axs)
 
 
-            axs[1].plot(yTA1.TAs['CmprsdB'],  label=' ComprsdB', color= 'green')
-            axs[1].plot(yTA1.TAs['CmprsdS'],  label=' ComprsdS', color= 'red')
+            axs[1].plot(yTA1.TAs['CmprsdB'],  label=' ComprsdB', color= 'green', linestyle='--', alpha=1)
+            axs[1].plot(yTA1.TAs['CmprsdS'],  label=' ComprsdS', color= 'red', linestyle='--', alpha=1)
             axs[1].plot(yTA1.TAs['Cost'],  label=' Cost', color= 'black')
-            axs[1].plot(yTA1.TAs['close'],  label=' price', color= 'blue')
+            axs[1].plot(yTA1.TAs['close'],  label=' price', color= 'blue', alpha=0.75)
 
             
            
             # 2nd y axis
             y2ndY=axs[1].twinx()
             y2ndY.plot(yTA1.TAs.index, yTA1.TAs['Shares'],  label=yTA1.symbol+' Shares', color= 'brown')
-            y2ndY.set_ylabel("Shares")
+            y2ndY.set_ylabel("Shares", color="brown")
 
             axs[1].legend(loc='upper left')
             axs[1].grid()

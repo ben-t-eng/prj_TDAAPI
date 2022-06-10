@@ -149,6 +149,8 @@ for yOLI in yFolder.Items:
 
     yO_S.UpdateOLI(yMsg)
     
+    #! if OLI save with error not tringgering lge, lgd, something is wrong with outlook,
+    #! disable the addins in outlook, outlookchangenotifier is especially suspicious
     yOLI.Save()
     
     #so to save a new copy to /history/ folder
@@ -157,7 +159,7 @@ for yOLI in yFolder.Items:
     yOLI1.Move(yFolder1)
     yOLI1.Close(0)
 
-    yOLI.Close(0)  #! save the outlook item, error means something wrong in wrtingt to OLI 
+    yOLI.Close(0)  #! save the outlook item, error means something wrong in writing to OLI 
 
    
 print(">>>>>>>>>>>>Finsihed iteration of SEC OLIs")    

@@ -180,7 +180,7 @@ class Stock:
         a=a_utils.TDAepoch2DT(a0) 
         b=pd.to_datetime(a0, unit='ms')
         s1="--->SMADate=PriceDate=" + a.strftime("%Y_%m_%d-%H_%M") + "; PD=" + b.strftime("%Y_%m_%d-%H_%M") +"; a0="+ str(a0)
-        lgc(s1 )
+        lgd(s1 )
         
         self.PriceDate=a
         
@@ -287,7 +287,7 @@ class Stock:
         self.HistDF['Cost']=np.NaN #df1.min()
         self.HistDF['Shares']=np.NaN
 
-        lgd(f" set_comprsdX starts")
+        #lgw(f" set_comprsdX starts")
     
         ###self.get_OLICompsdBS(self.Symbol, self.HistDF)
 
@@ -300,6 +300,7 @@ class Stock:
 
         lgd(" set_comprsdX done")
 
+    ########################################
     # great for testing , not  for real usage 
     def get_OLICompsdBS(self, Sec, DF ):
         yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
@@ -366,17 +367,18 @@ class Stock:
         # sFilter=  [SEC]='NVDA' And [CmprsdS] >0
         # result of Not (Not ( [Due Date] IS NULL)) is Due Date has to be not Null (bug on pywin32 ???)
         sFilter=f"[SEC]='{Sec}' And [{FieldNm}] >0  And Not (Not ( [Due Date] IS NULL)) "
-        lgd (f"filter = {sFilter}")
+        #lgw (f"filter = {sFilter}")
 
         f1=I1.Restrict(sFilter) #work
-        lgd(" step1 ")
+        #lgw(" step1 ")
 
         # sort is only effective on preinstalled fields, not on user propterties field, but restrict() can accept user property
         # false, date sorted from earilest to latest to none; True, from none, Lastest to earlier 
         f1.Sort(Property="[Due Date]", Descending= False )  
 
-        print ("Items", f1.Count, " Sec ", Sec, "search =", {sFilter} )     
-
+        #print ("Items", f1.Count, " Sec ", Sec, "search =", {sFilter} )     
+        yNoEarlier=datetime.datetime.timestamp(datetime.datetime(2000,1,1,1))
+        
         for yOLI in f1:
             #print(f"Sec:{yOLI.UserProperties.Find("SEC").Value} Effect date: {yOLI.UserProperties.Find("EffDate").Value}, price {yOLI.UserProperties.Find("Price").Value}, CmprsdeB= {}   ") 
             a= yOLI.UserProperties.Find("SEC").Value
@@ -384,16 +386,22 @@ class Stock:
             c=yOLI.UserProperties.Find("Price").Value
             d=yOLI.UserProperties.Find(FieldNm).Value
             e= yOLI.TaskDueDate #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.creationtime
-                
+
+            
+            
+            #lgw(f"due date {type(e)} , {type(yNoEarlier)}")
+            if datetime.datetime.timestamp(e) < yNoEarlier : 
+            #    lgw( f" {e} < { yNoEarlier}")   #skip if due date is too early 
+                continue
             str1=f"Sec1:{a} Effect/due date: /{e},  price123= {c}, {FieldNm}= {d} "
             df1=self.HistDF
-            lgd (str1)
+            #lgw (str1)
             #lgd ( df1.shape)
             #print (df1)
 
             # can not use Date, it is an index column
             yDate3=self.HistDF['datetime'].values[-1]  # nw: yDate.strftime("%m") yDate in Epoch format
-            print (f", type ydate= ", type(yDate3))  #, datetime.datetime.fromtimestamp( 1653022800000).strftime("%m") )
+            #print (f", type ydate= ", type(yDate3))  #, datetime.datetime.fromtimestamp( 1653022800000).strftime("%m") )
             lgd (f" due  date: {e};  {datetime.datetime.timestamp(e)} " )
 
 
@@ -429,22 +437,26 @@ class Stock:
                 self.TA1['Strategies']['SMA']["Params"]["Alert"] = 0
                 self.Comment=self.Comment + "SMA Alert reset since no change since last update" +'; ' 
                 
-                lgi("updated price=" + str(self.Price) +' volume=' +str(self.Volume) + 
+                lgd("updated price=" + str(self.Price) +' volume=' +str(self.Volume) + 
                     'SMAdate=' + str(self.TA1['Strategies']['SMA']["Params"]["Date"]) + ' SMA=' + str(self.SMA) )
 
 
     def SaveHist(self):
-        #lgi('SaveHist()')
+        try:
+            #lgi('SaveHist()')
 
-        cdir=self.Symbol
-        #pdir=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
-        pdir=a_Settings.URL_CVS_file
-        
-        path= a_utils.addDir(pdir, cdir)
+            cdir=self.Symbol
+            #pdir=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
+            pdir=a_Settings.URL_CVS_file
+            
+            path= a_utils.addDir(pdir, cdir)
 
-        path=a_utils.DF2CSV(self.HistDF, path, self.Symbol, '')
+            path=a_utils.DF2CSV(self.HistDF, path, self.Symbol, '')
 
-        lgi("SaveHist() path:  " + str(path) )
+            lgd("SaveHist() path:  " + str(path) )
+        except: 
+            lge(" failed ")
+
 
     def GetHist_TDA(self):
 

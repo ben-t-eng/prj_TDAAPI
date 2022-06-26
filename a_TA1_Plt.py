@@ -63,7 +63,7 @@ class TA1:
 
             #print('TAS=', self.TAs)
             #print( 'Prices=', self.prices)
-            lgw("Created price DS= "+ str(self.prices.shape))
+            lgd("Created price DS= "+ str(self.prices.shape))
         except:
             lge('unable to create price data series form HistDF')
             lgd('unable to create price data series form HistDF')
@@ -436,7 +436,9 @@ class TA1_Plt:
 
             axs[1].grid()
             
-            self.save_plot(yTA1,'BB', plt)  
+            #self.save_plot(yTA1,'BB', plt)  
+            self.save_plot(yTA1,'Bollinger_Bands', plt) 
+
             plt.close(fig)
             #plt.show()
             
@@ -502,10 +504,11 @@ class TA1_Plt:
                 yPath= a_utils.FilePath(Path=yPath, FileNm=filenm, TimeString='', Suffix='')
                 plot.savefig(yPath)
                 yPathSaved=yPath+'.png'
-               
-                ### dictionary  yTA1.container.TA1 from a_stock_IF---------- 
-                yTA1.container.TA1['Strategies'][strategy]['plt_loc'].append(yPathSaved)
                 lgd("plt saved at: " + str(yPathSaved) ) 
+                ### dictionary  yTA1.container.TA1 from a_stock_IF---------- 
+                # save to TA1 dictionary so that it can be recalled to put on OLI
+                yTA1.container.TA1['Strategies'][strategy]['plt_loc'].append(yPathSaved)
+                lgd("plt added to dictionary: " + str(yPathSaved) ) 
             except:
                 lge('plt not saved to ' + str(yPathSaved))
 

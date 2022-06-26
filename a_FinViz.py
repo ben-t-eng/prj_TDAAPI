@@ -50,7 +50,7 @@ class FinViz:
 
              #close browser
             browser.quit()
-            lgi("FinViz plt saved at:" + str(screenshot_path) ) 
+            lgd("FinViz plt saved at:" + str(screenshot_path) ) 
         
         except:
             lge('FinViz plt not saved to' + str(yPath))
@@ -87,7 +87,7 @@ def getChart2( yStockSymbol, savePath):
             
               #close browser
              browser.quit()
-             lgi("FinViz plt saved at:" + str(screenshot_path) )         
+             lgd("FinViz plt saved at:" + str(screenshot_path) )         
 
         except:
              lge('FinViz plt not saved to: ' + str(yPath))       

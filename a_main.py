@@ -33,7 +33,7 @@ from logging import critical as lgc   #50 #
 # step 2, select one of below line 
 import a_logging as alog
 # to customize the logging obj, all format propregate to root logging obj
-lg=alog.BTLogger( stdout_filter=alog.yfilter10, stream_filter=alog.yfilter10)
+lg=alog.BTLogger( stdout_filter=alog.yfilter20, stream_filter=alog.yfilter40)
 
 
 
@@ -81,9 +81,19 @@ import a_FinViz
 
 
 # %%
-# start from Outlook 
-testrun=0
-only_exclamation=1 # only those outlook exclamation marked items are updated
+# TDAAPI starting Cell;   from Outlook list of securities 
+testrun=0          # only use saved data file in csv format, not need to connect to internew
+only_exclamation=0 # only those outlook exclamation marked items are updated
+####################################
+# for compressed buy, sell and shares + cost need to set "due date" to take effect, 
+# once set, they are not changed until further change
+# compressed buy, sell and shares + cost effect is sticky , changes are made in  \Sec folder
+# 
+# for events, OLI subject and "eventdate" are required to put it on the chart 
+# events are single date items, need to be added in \history foldler 
+# 
+
+
 
 #https://stackoverflow.com/questions/50127959/win32-dispatch-vs-win32-gencache-in-python-what-are-the-pros-and-cons
 ## yWD= win32.gencache.EnsureDispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
@@ -101,10 +111,8 @@ for yOLI in yFolder.Items:
     # flush the string_io for next security
     lg.FlushStringIO()
 
-    
-
-
-
+   
+    #################################################################
     #only go further for those are marked "Test" in OLI subject field
     yMsg=''
     if testrun==1  and yOLI.Subject  !='Test':
@@ -117,9 +125,16 @@ for yOLI in yFolder.Items:
     #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.importance
     if only_exclamation==1 and yOLI.Importance!= 2: continue
 
+
+    ################################################################
+    #? 
+    yOLI1=yOLI.Copy() # for gettingh the latest setting from user, so compressedBS and Event info can be on plot
+    yOLI1.Move(yFolder1)
+
+    
     yO_S=a_OL_IF.OLI_Stock(yOLI,lg)
-  
     yO_S.InitStock()
+
 
     if yO_S.Stock.GetHist(testrun) == 0: continue  # 20220218 , changed from 1 to 0 ; 1 for testing, 0 for getting data from TDA 
 
@@ -154,10 +169,17 @@ for yOLI in yFolder.Items:
     yOLI.Save()
     
     #so to save a new copy to /history/ folder
+    #? delete the previous one for compressedBD and event processing
+    yOLI1.Delete()
+
     #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.copy
     yOLI1=yOLI.Copy()
+    #copy newly processed item from \sec to\ history
     yOLI1.Move(yFolder1)
     yOLI1.Close(0)
+
+    #delete the eventdate and due date
+    a_OL_IF.OLICleanup1(yOLI)  
 
     yOLI.Close(0)  #! save the outlook item, error means something wrong in writing to OLI 
 

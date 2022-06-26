@@ -7,6 +7,9 @@
 # %%
 ## imports
 from email.headerregistry import Address
+from attr import NOTHING
+from numpy import empty
+from sqlalchemy import null
 import win32com.client as win32
 from win32com.client import constants as C
 import datetime 
@@ -243,6 +246,9 @@ class OLI_Stock :
             lgd(" before insert events")
             self.insertEvents(yWDoc)
 
+            # cleanup fields after new content
+            #do this after it is copied to \history 
+            #w self.OLICleanup()
 
             lgd("completed")
 
@@ -310,9 +316,9 @@ class OLI_Stock :
         # C.olCurrency=14, C.olDateTime=5, C.olText=1, C.olNumber=3 
 
         lgd('SetOLIUsrProp='+ str(Fieldnm) + ', value string=' + str(Value) + ', value tpye =' + str (type(Value)))
-        if Value == None:
-            lge('fail to set OL fields, Fieldnm='+ Fieldnm + '; Value type='+ type(Value))
-            return 
+        #? if Value == None:
+        #?    lge('fail to set OL fields, Fieldnm='+ Fieldnm + '; Value type='+ type(Value))
+        #?   return 
 
         if self.OLI.UserProperties.Find(Fieldnm) == None:
             try:
@@ -411,6 +417,56 @@ class OLI_Stock :
         
 
         return (yRng, n) 
+
+    #so that when the update OLI is copied back to /sec dir, it is not a valid event for next update
+    def OLICleanup(self):
+        try:
+            yDT=datetime.date(2022,7,1)    #w!(2022,7,1,18)  #?fromisoformat("1900-01-01")       #w  datetime.datetime.today()   #nw date(1900,1,1)
+            lge(f"1. set date to {yDT}")
+            self.OLI.TaskDueDate= yDT  #nw, triggerred except: None, NOTHING, null
+            lge(f"1.2.")
+            yUP=self.OLI.UserProperties.Find("EventDate")
+            lge(f"2. yUProp {type(yUP)}")
+            if  yUP is not None:
+                yUP.Delete()       #w!, this deletes eventdate not delete() !!        
+            
+            lge(f"3. set date to {yDT}")
+            #?self.SetOLIUsrProp("EventDate", a_utils.DateTime2UTC4OLI(datetime.datetime.now()) , C.olDateTime)
+            #self.SetOLIUsrProp("EventDate", yDT, C.olDateTime)
+            #assign  "None", nothing happened
+            #        "NOTHING" , "due date" gets 12/29/1899
+            #        "null" , same as "NOTHING"
+            #           datetime.datetime.day(4501,1,1), same as NOTHING
+            #           "empty", same as NOTHING   
+        
+            
+        except:
+            lge("failed")
+
+def OLICleanup1(yOLI):
+        try:
+            yDT= datetime.datetime(1990,1,1)            #nw datetime.datetime(1960,1,1)            #nw datetime.datetime.date(2022,7,1) #w datetime.datetime(2022,7,1)  #nw.date(2022,7,1)    #w!(2022,7,1,18)  #?fromisoformat("1900-01-01")       #w  datetime.datetime.today()   #nw date(1900,1,1)
+            #lgw(f"1. set date to {yDT}")
+            yOLI.TaskDueDate=yDT  #nw "None", "null", "empty","" #only accepts datetime obj, not date obj  #nw, triggerred except: None, NOTHING, null
+            #lgw(f"1.2.")
+            yUP=yOLI.UserProperties.Find("EventDate")
+            #lgw(f"2. yUProp {type(yUP)}")
+            if  yUP is not None:
+                yUP.Delete()       #w!, this deletes eventdate not delete() !!        
+            
+            #lgw(f"3. set date to {yDT}")
+            #?self.SetOLIUsrProp("EventDate", a_utils.DateTime2UTC4OLI(datetime.datetime.now()) , C.olDateTime)
+            #self.SetOLIUsrProp("EventDate", yDT, C.olDateTime)
+            #assign  "None", nothing happened
+            #        "NOTHING" , "due date" gets 12/29/1899
+            #        "null" , same as "NOTHING"
+            #           datetime.datetime.day(4501,1,1), same as NOTHING
+            #           "empty", same as NOTHING   
+        
+            
+        except:
+            lge("failed")
+        
 
 
 

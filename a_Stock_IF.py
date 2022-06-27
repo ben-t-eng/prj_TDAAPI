@@ -349,7 +349,7 @@ class Stock:
 
         #yOL=None
 
-    def set_CmprsdData(self, FieldNm, Sec):
+    def set_CmprsdData_original(self, FieldNm, Sec):   #w! with [due date]
     #this required outllook "due date"  aka taskduedate in VBA to be set     
     # fieldnm must be a userproperty in OLI and a numerical number ,e.g. > 0  
        
@@ -413,7 +413,92 @@ class Stock:
 
         yOL=None        
 
+    def set_CmprsdData(self, FieldNm, Sec):    #? for using [effdate]
+    #? testing effdate    
+    #this required outllook "due date"  aka taskduedate in VBA to be set     
+    # fieldnm must be a userproperty in OLI and a numerical number ,e.g. > 0  
+        try:       
+            yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
+            yNS = yOL.GetNamespace("MAPI")
+            yFolder1 =yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities'].Folders['History']
+ 
+            ### I1=yFolder1.Items
+            ### I1.Sort(Property="[Effdate]", Descending= False ) 
+            ###lgd( f" step 2, count = {yFolder1.UserDefinedProperties.Count}" ) 
 
+            yUP =yFolder1.UserDefinedProperties.Find("Effdate")
+            lgd( f"yUP is '{yUP.Name}' " )
+
+            #https://docs.microsoft.com/en-us/office/vba/outlook/how-to/search-and-filter/filtering-items
+            # https://docs.microsoft.com/en-us/office/vba/outlook/how-to/search-and-filter/filtering-items-using-a-boolean-comparison
+            #nw:  And  [Due Date] > '" & Format("1/15/20 3:30pm", "ddddd h:nn AMPM") & "'" 
+            # And "[Due Date] IS NULL" actually filter out entries that Due Date is None 
+        
+            # sFilter=  [SEC]='NVDA' And [CmprsdS] >0
+            # result of Not (Not ( [Due Date] IS NULL)) is Due Date has to be not Null (bug on pywin32 ???)
+            sFilter=f"[SEC]='{Sec}' And [{FieldNm}] >0  And Not (Not ( [EffDate] IS NULL)) "
+            #lgw (f"filter = {sFilter}")
+
+            ### f1=I1.Restrict(sFilter) #work
+            #lgw(" step1 ")
+
+            # sort is only effective on preinstalled fields, not on user propterties field, but restrict() can accept user property
+            # false, date sorted from earilest to latest to none; True, from none, Lastest to earlier 
+            # works for  [Due Date] nw for [effdate]: f1.Sort(Property="[EffDate]", Descending= True )  
+
+            ### lgw(f"Items {f1.Count}, Sec:{Sec}, search = {sFilter}" )     
+
+            yNoEarlier=datetime.datetime.timestamp(datetime.datetime(2000,1,1,1))
+
+            #https://stackoverflow.com/questions/50728378/sorting-outlook-tasks-by-user-defined-field-in-vba
+            #https://docs.microsoft.com/en-us/office/vba/api/outlook.folder.gettable
+            # w!
+            yOLTable=yFolder1.GetTable(sFilter) #w! 
+            yOLTable.Sort(SortProperty="[Effdate]", Descending= False ) #w!, 
+            lgw (f"OLtable count : {yOLTable.GetRowCount()} ")
+
+            while not yOLTable.EndOfTable:
+                yRow=yOLTable.GetNextRow()
+                lgd(f'row values are  {yRow.GetValues() } , effdate: {yRow.Item("EntryID")}')   #nw, {yRow('Effdate')}")
+                yOLI=yNS.GetItemFromID(yRow.Item("EntryID"), yFolder1.StoreID)
+                lgw(f' effdate is {yOLI.UserProperties.Find("EffDate").Value} ') 
+               
+                #print(f"Sec:{yOLI.UserProperties.Find("SEC").Value} Effect date: {yOLI.UserProperties.Find("EffDate").Value}, price {yOLI.UserProperties.Find("Price").Value}, CmprsdeB= {}   ") 
+                a= yOLI.UserProperties.Find("SEC").Value
+                #not used b=yOLI.UserProperties.Find("EffDate").Value   
+                c=yOLI.UserProperties.Find("Price").Value
+                d=yOLI.UserProperties.Find(FieldNm).Value
+                e= yOLI.UserProperties.Find("EffDate").Value #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.creationtime
+
+                
+                
+                #lgw(f"due date {type(e)} , {type(yNoEarlier)}")
+                if datetime.datetime.timestamp(e) < yNoEarlier : 
+                #    lgw( f" {e} < { yNoEarlier}")   #skip if due date is too early 
+                    continue
+
+                str1=f"Sec1:{a} Effect/due date: /{e},  price123= {c}, {FieldNm}= {d} "
+                df1=self.HistDF
+                lgd (str1)
+                #lgd ( df1.shape)
+                #print (df1)
+
+                # can not use [Date] column in df1 {C:\BTFiles\btgithub1b\prj_TDAAPI\HistoricalData\TEST(GOOG)\TEST(GOOG)_2022_06_26-15_13.csv} , it is an index column
+                # yDate3=self.HistDF['datetime'].values[-1]  # nw: yDate.strftime("%m") yDate in Epoch format
+                #print (f", type ydate= ", type(yDate3))  #, datetime.datetime.fromtimestamp( 1653022800000).strftime("%m") )
+                lgd (f" due  date: {e};  {datetime.datetime.timestamp(e)} " )
+
+
+                #https://datagy.io/pandas-conditional-column/
+                # x 1000 since TDA timestamp uses ms, and python dt ts uses sec 
+                df1.loc[df1['datetime'] > datetime.datetime.timestamp(e)*1000, f'{FieldNm}'] = d
+
+                lgd ("step 2")
+
+            yOL=None  
+
+        except:
+            lge("failed")
 
 
 

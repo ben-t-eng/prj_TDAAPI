@@ -134,7 +134,7 @@ class OLI_Stock :
             # outlook userproperty stores time in GMT (UTC), when set, it auto change to UTC by know system time is PST 
             # therefore add 6-7 hours ( ahead) 
             sma_dict=str(self.Stock.TA1['Strategies']['SMA']['Params'])
-            lgd(f'UpdateOLIFields() OK8 {sma_dict}; ydt5={yDT5}')
+            lgw(f'UpdateOLIFields() OK8 {sma_dict}; ydt5={yDT5}')
             #https://docs.microsoft.com/en-us/office/vba/api/outlook.oluserpropertytype
             #https://docs.microsoft.com/en-us/office/vba/api/outlook.timezone.standardbias
 
@@ -147,8 +147,9 @@ class OLI_Stock :
             #########################20220607
             ## when run cell returns with "RPC server not found" or other msg NOT from python exception msg 
             ## it is likely the issue is with outlook addin setting of 
-            
-            self.OLI.Save()
+            lgw(f'OK9')
+
+            #? self.OLI.Save()
 
 
         except:
@@ -316,9 +317,9 @@ class OLI_Stock :
         # C.olCurrency=14, C.olDateTime=5, C.olText=1, C.olNumber=3 
 
         lgd('SetOLIUsrProp='+ str(Fieldnm) + ', value string=' + str(Value) + ', value tpye =' + str (type(Value)))
-        #? if Value == None:
-        #?    lge('fail to set OL fields, Fieldnm='+ Fieldnm + '; Value type='+ type(Value))
-        #?   return 
+        #nu if Value == None:
+        #nu    lge('fail to set OL fields, Fieldnm='+ Fieldnm + '; Value type='+ type(Value))
+        #nu  return 
 
         if self.OLI.UserProperties.Find(Fieldnm) == None:
             try:
@@ -421,7 +422,7 @@ class OLI_Stock :
     #so that when the update OLI is copied back to /sec dir, it is not a valid event for next update
     def OLICleanup(self):
         try:
-            yDT=datetime.date(2022,7,1)    #w!(2022,7,1,18)  #?fromisoformat("1900-01-01")       #w  datetime.datetime.today()   #nw date(1900,1,1)
+            yDT=datetime.date(2022,7,1)    #w!(2022,7,1,18)  #too old a date for pywin32: fromisoformat("1900-01-01")       #w  datetime.datetime.today()   #nw date(1900,1,1)
             lge(f"1. set date to {yDT}")
             self.OLI.TaskDueDate= yDT  #nw, triggerred except: None, NOTHING, null
             lge(f"1.2.")
@@ -445,15 +446,28 @@ class OLI_Stock :
 
 def OLICleanup1(yOLI):
         try:
-            yDT= datetime.datetime(1990,1,1)            #nw datetime.datetime(1960,1,1)            #nw datetime.datetime.date(2022,7,1) #w datetime.datetime(2022,7,1)  #nw.date(2022,7,1)    #w!(2022,7,1,18)  #?fromisoformat("1900-01-01")       #w  datetime.datetime.today()   #nw date(1900,1,1)
+            
+            ##################
+            # as of 6/26 no need to clear Due date since effdate is in use
+            #  due date will be used for flagging buy sell signal 
+            ##################
+            #yDT= datetime.datetime(1990,1,1)            #nw datetime.datetime(1960,1,1)            #nw datetime.datetime.date(2022,7,1) #w datetime.datetime(2022,7,1)  #nw.date(2022,7,1)    #w!(2022,7,1,18)  #nw fromisoformat("1900-01-01")       #w  datetime.datetime.today()   #nw date(1900,1,1)
             #lgw(f"1. set date to {yDT}")
-            yOLI.TaskDueDate=yDT  #nw "None", "null", "empty","" #only accepts datetime obj, not date obj  #nw, triggerred except: None, NOTHING, null
+            # yOLI.TaskDueDate=yDT  #nw "None", "null", "empty","" #only accepts datetime obj, not date obj  #nw, triggerred except: None, NOTHING, null
+            
             #lgw(f"1.2.")
+
             yUP=yOLI.UserProperties.Find("EventDate")
             #lgw(f"2. yUProp {type(yUP)}")
             if  yUP is not None:
                 yUP.Delete()       #w!, this deletes eventdate not delete() !!        
             
+            yUP=yOLI.UserProperties.Find("Effdate")
+            #lgw(f"2. yUProp {type(yUP)}")
+            if  yUP is not None:
+                yUP.Delete()       #w!, this deletes eventdate not delete() !!   
+
+
             #lgw(f"3. set date to {yDT}")
             #?self.SetOLIUsrProp("EventDate", a_utils.DateTime2UTC4OLI(datetime.datetime.now()) , C.olDateTime)
             #self.SetOLIUsrProp("EventDate", yDT, C.olDateTime)

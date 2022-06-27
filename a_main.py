@@ -28,7 +28,10 @@ from logging import debug    as lgd   #10
 from logging import info     as lgi   #20
 from logging import warning  as lgw   #30
 from logging import error    as lge   #40
-from logging import critical as lgc   #50 #
+from logging import critical as lgc
+#from types import NoneType
+
+from sqlalchemy import null   #50 #
 
 # step 2, select one of below line 
 import a_logging as alog
@@ -82,6 +85,7 @@ import a_FinViz
 
 # %%
 # TDAAPI starting Cell;   from Outlook list of securities 
+only_Selected=1   # only OLI with [Selected] is true
 testrun=0          # only use saved data file in csv format, not need to connect to internew
 only_exclamation=0 # only those outlook exclamation marked items are updated
 ####################################
@@ -125,12 +129,15 @@ for yOLI in yFolder.Items:
     #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.importance
     if only_exclamation==1 and yOLI.Importance!= 2: continue
 
+    if only_Selected==1 and yOLI.UserProperties.Find("SELECTED") is None: continue 
+    if only_Selected==1 and yOLI.UserProperties.Find("SELECTED").Value == False : continue
+
 
     ################################################################
-    #? 
+    #good
     yOLI1=yOLI.Copy() # for gettingh the latest setting from user, so compressedBS and Event info can be on plot
     yOLI1.Move(yFolder1)
-
+    
     
     yO_S=a_OL_IF.OLI_Stock(yOLI,lg)
     yO_S.InitStock()
@@ -169,18 +176,20 @@ for yOLI in yFolder.Items:
     yOLI.Save()
     
     #so to save a new copy to /history/ folder
-    #? delete the previous one for compressedBD and event processing
+    # delete the previous one for compressedBD and event processing
     yOLI1.Delete()
 
     #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.copy
-    yOLI1=yOLI.Copy()
+    yOLI2=yOLI.Copy()
     #copy newly processed item from \sec to\ history
-    yOLI1.Move(yFolder1)
-    yOLI1.Close(0)
+    
+    yOLI2.Move(yFolder1)
+    a_OL_IF.OLICleanup1(yOLI) 
+   
 
     #delete the eventdate and due date
-    a_OL_IF.OLICleanup1(yOLI)  
-
+     
+  
     yOLI.Close(0)  #! save the outlook item, error means something wrong in writing to OLI 
 
    

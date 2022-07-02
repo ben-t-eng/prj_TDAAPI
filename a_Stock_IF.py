@@ -7,7 +7,7 @@ from pickle import FALSE, TRUE
 from re import M
 import sys
 
-from sqlalchemy import column
+from sqlalchemy import column, null
 sys.path.append ('..\TDAAPI')
 import a_TDA_IF 
 import a_utils
@@ -455,13 +455,13 @@ class Stock:
             # w!
             yOLTable=yFolder1.GetTable(sFilter) #w! 
             yOLTable.Sort(SortProperty="[Effdate]", Descending= False ) #w!, 
-            lgw (f"OLtable count : {yOLTable.GetRowCount()} ")
+            #lgw (f"OLtable count : {yOLTable.GetRowCount()} ")
 
             while not yOLTable.EndOfTable:
                 yRow=yOLTable.GetNextRow()
                 lgd(f'row values are  {yRow.GetValues() } , effdate: {yRow.Item("EntryID")}')   #nw, {yRow('Effdate')}")
                 yOLI=yNS.GetItemFromID(yRow.Item("EntryID"), yFolder1.StoreID)
-                lgw(f' effdate is {yOLI.UserProperties.Find("EffDate").Value} ') 
+                #lgw(f' effdate is {yOLI.UserProperties.Find("EffDate").Value} ') 
                
                 #print(f"Sec:{yOLI.UserProperties.Find("SEC").Value} Effect date: {yOLI.UserProperties.Find("EffDate").Value}, price {yOLI.UserProperties.Find("Price").Value}, CmprsdeB= {}   ") 
                 a= yOLI.UserProperties.Find("SEC").Value
@@ -550,27 +550,91 @@ class Stock:
 
         return df
 
+    def SummaryDF(self, yDF, yOLIID):
 
+        yFlagTxt=self.genFlagTxt()
+        yLink2OLI=yOLIID      # self.genLink2OLI()
+        yLink2Plt= self.TA1['Strategies']['FinViz']['plt_loc'][-1]            # self.genLink2Plt()
+       
+        ### yDF.loc[len(yDF.index)]=[datetime.datetime.now(),self.HistDF['symbol'][-1], self.HistDF['close'][-1], 
+        ### self.HistDF['volume'][-1], self.HistDF.tail(1).index.values[-1] ,self.HistDF['Cost'][-1], 
+        ### self.HistDF['Shares'][-1], yFlagTxt, yLink2Plt, yLink2OLI]  
+
+        yDF.loc[len(yDF.index)]=[datetime.datetime.now(),self.HistDF['symbol'].tail(1), self.HistDF['close'].tail(1), 
+        self.HistDF['volume'].tail(1), self.HistDF.tail(1).index.values[-1] ,self.HistDF['Cost'].tail(1), 
+        self.HistDF['Shares'].tail(1), yFlagTxt, yLink2Plt, yLink2OLI]  
+
+        #nW yNpA=np.array([datetime.datetime.now(),self.HistDF['symbol'][-1], self.HistDF['close'][-1], 
+        #nW self.HistDF['volume'][-1], self.HistDF.tail(1).index.values[-1] ,self.HistDF['Cost'][-1], self.HistDF['Shares'][-1],
+        #nw yFlagTxt, yLink2Plt, yLink2OLI])
+        #nw yDF.append(yNpA,  ignore_index = True)
+
+    def genFlagTxt(self):
+    
+        #iterate through buysell signal columns
+        lgd('Stratgy = '+str(self.TA1)) 
+        yFlagText=''
+
+        #debugging
+        #works but w/ Py warning: self.HistDF['SMA_Buy'][-1]=1122
+        #works self.HistDF['SMA_Buy'].to_numpy()[-1]=1122
+        self.HistDF.loc[-1, 'SMA_Buy']=1122
+        ##########
+
+        #lgw(f"histDF row: {self.HistDF.tail(1)}")
+
+        try:
+            for yStrategy in self.TA1['Strategies']:
+                try:
+                    lgw(f"strategy: {yStrategy}")
+                    ySignal=self.HistDF.tail(1)[f'{yStrategy}_Buy'].to_numpy()[-1]
+                    lgw(f"signal type: {type(ySignal)}")
+                    if (ySignal is not null ) and not (pd.isna(ySignal)):
+                        yFlagText=yFlagText + f"{yStrategy}_Buy at {ySignal}; "
+                        lgw(f"signal: {ySignal}")
+                except:
+                    lge(f"failed at {yStrategy}")
+                finally:
+                    continue
+                        
+        except:
+            lge('failed')
+
+        finally:
+            return yFlagText
+
+###########################################################
 # %%
 def test1():
-    df123 = pd.DataFrame(
+    df1= pd.DataFrame(
         {"a" : [4 ,5, 6], 
         "b" : [7, 8, 9], 
         "c" : [10, 11, 12]},    
-        index = [1, 2, 3])
-    print (df123)
-    ### z1=df123['c'].values[-1]
-    ### z1=df123['c'][1]  # works with indexing, =10 
-    #nw z1=df123['c'][-1]
-    #nw z1=df123['c',-1]
-    #nw z1=df123[-1, 'c']
-    #nw z1=df123.iloc['c',-1]
-    #nw z1=df123.iloc[-1, 'c']
-    #nw z1=df123.iloc['c',1]
-    #nw z1=df123.iloc[1,'c']
-    np1=df123['c'].to_numpy()
-    z1=np1[-1]
-    print(f" df type= {type(z1)}, { z1}    ")    
+        index = [1, 2, 'z'])
+    print (df1)
+   
+    np1=df1['c'].to_numpy()
+    #w! z1=np1[-1]
+    #w! z1=df1['c'].to_numpy()[-1]
+    #w1 z1=df1['c'].tail(1).to_numpy()[-1]
+    #w z1=df1.tail(1)['b'].to_numpy()[1]
+    #NW ! z1=df1.loc[-1, 'b']
+    #w z1=df1.loc[:,'b'].to_numpy()[-1]
+    df1.loc[-1,'b'] =321
+    z1=df1.loc[1:'z','b']       # allow: -1, : , 1:2; 1:'z';  nw: 0:2;  
+    #      a  b   c
+    #   1  4  7  10
+    #   2  5  8  11
+    #   z  6  9  12
+
+    ### z1=df123.iloc[-1, -1]=12  # iloc allows -1 both dims use E/C's index; loc does not , both dim use row column name
+
+    ### z1=df123['b'][2] =8   # df[clm nm][row nm] == df.loc [row nm, clm nm ]; df.iloc[ridx, cidx]
+
+    #z1=df1.loc["z",:]
+    df1.loc[len(df1.index)]=[11,22,33]
+    df1.loc[2]=[111,222,333]
+    print(f" df type= {type(z1)}, z1: { z1}  , df1: {df1}  ")    
 
 # %% running tests
 if __name__ == '__main__':

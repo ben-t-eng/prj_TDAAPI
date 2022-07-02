@@ -81,12 +81,37 @@ import numpy as np
 import a_TA1_Plt
 import a_FinViz
 
+# %%
+def updateSummaryOLI(yDF):
+    try:
+        a=1
+    except:
+        a=1
 
+def genSummaryDF():
+    try:
+        yDF=pd.DataFrame(
+        { "Datetime":[datetime.datetime.now()],    
+          "Sec":['Summary'],
+          "Close":[1],
+          "Volume" : [2],
+          "PriceDate":[np.NaN],
+          "Cost":[0],
+          "Shares":[0],
+          "Flag":['Flags'], 
+          "Link2Plot":['lk1'], 
+          "Link2OLI":['lk2']
+        },
+    index=[0]) 
+    except:
+        lge('failed')
+    finally:
+        return yDF
 
 # %%
 # TDAAPI starting Cell;   from Outlook list of securities 
-only_Selected=1   # only OLI with [Selected] is true
-testrun=0          # only use saved data file in csv format, not need to connect to internew
+only_Selected=0   # only OLI with [Selected] is true
+testrun=1          # only use saved data file in csv format, not need to connect to internew
 only_exclamation=0 # only those outlook exclamation marked items are updated
 ####################################
 # for compressed buy, sell and shares + cost need to set "due date" to take effect, 
@@ -98,6 +123,7 @@ only_exclamation=0 # only those outlook exclamation marked items are updated
 # 
 
 
+ySummaryDF=genSummaryDF()
 
 #https://stackoverflow.com/questions/50127959/win32-dispatch-vs-win32-gencache-in-python-what-are-the-pros-and-cons
 ## yWD= win32.gencache.EnsureDispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
@@ -192,7 +218,13 @@ for yOLI in yFolder.Items:
   
     yOLI.Close(0)  #! save the outlook item, error means something wrong in writing to OLI 
 
-   
+    yO_S.Stock.SummaryDF(ySummaryDF, yOLI2.EntryID)
+
+
+#updateSummaryOLI(ySummaryDF) 
+lgw(f"{ySummaryDF}")
+
+
 print(">>>>>>>>>>>>Finsihed iteration of SEC OLIs")    
     
 yWD=None
@@ -207,3 +239,10 @@ yOL=None
 def steps():
     a=1
     b=2
+
+# %%
+if __name__ == "__main__" :
+    yDF= genSummaryDF()
+    print (yDF)
+
+# %%

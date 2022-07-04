@@ -149,7 +149,7 @@ class OLI_Stock :
             ## it is likely the issue is with outlook addin setting of 
             lgw(f'OK9')
 
-            #? self.OLI.Save()
+            self.OLI.Save()
 
 
         except:
@@ -161,18 +161,19 @@ class OLI_Stock :
     def UpdateOLI(self, yMsg=''):
         try:
             self.UpdateOLIFields()
-            
+            lgd(" field updated")
             yInsp =self.OLI.GetInspector    
-
+            yInsp.Activate()   
+            
             # wordeditor is word.document obj : https://docs.microsoft.com/en-us/office/vba/api/word.document
             yWDoc =yInsp.WordEditor 
             #lgd('worddoc id1='+ str(id(yWDoc)))
-
+            
             #!! need this to write inside add tables
             # outlook needs not be open and all happen internally 
             #! need to close the OLI, no need to close the Inspector.close did not work
-            yInsp.Activate()     
-            
+              
+           
             if yWDoc.ProtectionType != C.wdNoProtection: 
                 yWDoc.Unprotect()
 
@@ -185,11 +186,22 @@ class OLI_Stock :
             # yWDoc.Content.Select()  # content is a range obj 
             yWDoc.Content.Delete()  
           
-
-
+           
             ySel=yWDoc.Windows(1).Selection  # get selection obj , https://docs.microsoft.com/en-us/office/vba/api/word.windows
             # selection itself is a word window object https://docs.microsoft.com/en-us/office/vba/api/word.window
             
+            #https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.word.range?view=word-pia
+            #Each Range object is defined by a starting and ending character position. 
+            # Similar to the way bookmarks are used in a document, 
+            # Range objects are used to identify specific portions of a document. 
+            # However, unlike a bookmark, a Range object only exists 
+            # while the programming code that defined it is running. 
+            # Range objects are independent of the selection.
+            # it is usually not necessary to select text before modifying the text. 
+            # Instead, you create a Range object that refers to a specific portion of the document. 
+            # For information about defining Range objects
+            
+            #https://bettersolutions.com/word/paragraphs/vba-range-vs-selection.htm
             # range is a section of text/area in word document 
             # selection is a selected section of text/area
             # selection is for user to pick using GUI 
@@ -197,6 +209,7 @@ class OLI_Stock :
             # selection delete() need to run selection() first, while range delelte() need not 
             
             #set range to the beginning for the doc
+            # not needed if content is delete beforehand
             yRng, n =self.RngOutOfTables(ySel.Range)
             #print('n=', n)
 
@@ -217,14 +230,14 @@ class OLI_Stock :
             yRng =yWDoc.Characters(1)
             yRng.InsertBefore( yTString )
 
-
+           
             ################################################
             #print (type(ySel)) 
             #2nd cell with Stock.comment 
             ySel=yWDoc.Windows(1).Selection 
             ySel.Collapse()
             yRng=ySel.Range
-            
+            lgd("1 ")
             yRng.Collapse(Direction=C.wdCollapseStart)
             yRng.Move(Unit=C.wdCell, Count=4 )  # when you have single column , this moves to the cell below 
             
@@ -242,7 +255,7 @@ class OLI_Stock :
             yRng.Move(Unit=C.wdCell, Count=3 )
             # file=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug\GOOG\GOOG_SMA_04_25_21.png'
             self.InsertImage(yRng)
-
+            
             ##################################################
             lgd(" before insert events")
             self.insertEvents(yWDoc)
@@ -261,51 +274,53 @@ class OLI_Stock :
             # yWDoc.Close(SaveChanges=-1)
             # yWDoc.Save()
             yInsp.Close(C.olSave) #nw, no need 
-            #self.OLI.Save()   # to call in main loop
+            self.OLI.Save()   # to call in main loop
             lgd("OLIUpdate finally closed at: ")
 
     def insertEvents1(self):
         lgd(f" step 0")
 
     def insertEvents(self, yWDoc):
+        try:
+            lgd(f" step 0")          
+            ySel=yWDoc.Windows(1).Selection 
+            ySel.Collapse()
+            yRng=ySel.Range
+
+            #https://docs.microsoft.com/en-us/office/vba/api/word.wdunits
+            yRng.Collapse(Direction=C.wdCollapseStart)
+            yRng.Move(Unit=C.wdCell, Count=1 )
+            yRng.InsertAfter("Comment or URL: ")
+    
+            lgd(f" step 1")
+            yDF=self.Stock.HistDF
         
-        lgd(f" step 0")          
-        ySel=yWDoc.Windows(1).Selection 
-        ySel.Collapse()
-        yRng=ySel.Range
-
-        #https://docs.microsoft.com/en-us/office/vba/api/word.wdunits
-        yRng.Collapse(Direction=C.wdCollapseStart)
-        yRng.Move(Unit=C.wdCell, Count=1 )
-        yRng.InsertAfter("Comment or URL: ")
-   
-        #lgd(f" step 1")
-        yDF=self.Stock.HistDF
-      
-        #lgd("df shape"+ str( yDF.shape))
-        #ySec=self.stock.HistDF.Symbol
-        yDF1=yDF[yDF["EventLink"].notnull() ]
-        
-        
-        lgd(f" DF count = {len(yDF1)}")
-
-        for i in range(0, len(yDF1)):
-            yOLIID=yDF1["EventLink"].values[i]   
-            yDT=yDF1["EventDate"].values[i]
-            yEvSubj=yDF1["EventSubject"].values[i]
-            #from stock.HistDF to excel, EventDate is a datetime object, 
-            yDTStr=yDT.strftime("%Y_%m_%d-%H_%M")
-
-            lgd(f"TextToDisplay=<{i}>-{yDTStr}")
-
-            yRng.Collapse(Direction=C.wdCollapseEnd)
-            yRng.InsertBreak(C.wdLineBreak)  # https://docs.microsoft.com/en-us/office/vba/api/word.wdbreaktype
-            yRng.InsertAfter("New")
-            # https://docs.microsoft.com/en-us/office/vba/api/word.hyperlinks.add
-            yHL=yWDoc.Hyperlinks.Add(Anchor=yRng, Address=f"Outlook:{yOLIID}", TextToDisplay=f"<{i+1}> {yEvSubj}: {yDTStr} ") 
-                
+            #lgd("df shape"+ str( yDF.shape))
+            #ySec=self.stock.HistDF.Symbol
+            yDF1=yDF[yDF["EventLink"].notnull() ]
             
-            yRng=yHL.Range
+            
+            lgd(f" DF count = {len(yDF1)}")
+
+            for i in range(0, len(yDF1)):
+                yOLIID=yDF1["EventLink"].values[i]   
+                yDT=yDF1["EventDate"].values[i]
+                yEvSubj=yDF1["EventSubject"].values[i]
+                #from stock.HistDF to excel, EventDate is a datetime object, 
+                yDTStr=yDT.strftime("%Y_%m_%d-%H_%M")
+
+                lgd(f"TextToDisplay=<{i}>-{yDTStr}")
+
+                yRng.Collapse(Direction=C.wdCollapseEnd)
+                yRng.InsertBreak(C.wdLineBreak)  # https://docs.microsoft.com/en-us/office/vba/api/word.wdbreaktype
+                yRng.InsertAfter("New")
+                # https://docs.microsoft.com/en-us/office/vba/api/word.hyperlinks.add
+                yHL=yWDoc.Hyperlinks.Add(Anchor=yRng, Address=f"Outlook:{yOLIID}", TextToDisplay=f"<{i+1}> {yEvSubj}: {yDTStr} ") 
+                    
+                
+                yRng=yHL.Range
+        except:
+            lge("failed")
  
 
 
@@ -432,7 +447,7 @@ class OLI_Stock :
                 yUP.Delete()       #w!, this deletes eventdate not delete() !!        
             
             lge(f"3. set date to {yDT}")
-            #?self.SetOLIUsrProp("EventDate", a_utils.DateTime2UTC4OLI(datetime.datetime.now()) , C.olDateTime)
+            # self.SetOLIUsrProp("EventDate", a_utils.DateTime2UTC4OLI(datetime.datetime.now()) , C.olDateTime)
             #self.SetOLIUsrProp("EventDate", yDT, C.olDateTime)
             #assign  "None", nothing happened
             #        "NOTHING" , "due date" gets 12/29/1899
@@ -469,7 +484,7 @@ def OLICleanup1(yOLI):
 
 
             #lgw(f"3. set date to {yDT}")
-            #?self.SetOLIUsrProp("EventDate", a_utils.DateTime2UTC4OLI(datetime.datetime.now()) , C.olDateTime)
+            #self.SetOLIUsrProp("EventDate", a_utils.DateTime2UTC4OLI(datetime.datetime.now()) , C.olDateTime)
             #self.SetOLIUsrProp("EventDate", yDT, C.olDateTime)
             #assign  "None", nothing happened
             #        "NOTHING" , "due date" gets 12/29/1899
@@ -482,6 +497,108 @@ def OLICleanup1(yOLI):
             lge("failed")
         
 
+def updateSummaryOLI(yDF, yFolder):
+    try:
+        
+
+        sFilter=f"[SEC]='Summary'  " 
+        
+        
+        yFolder.Items.Sort(Property="[LastModificationTime]", Descending= True ) 
+        #only the first entry is use
+        
+
+        I2=yFolder.Items.Restrict(sFilter)
+        lgw(f' I2 len: { I2.Count }')
+        yOLI=I2.GetFirst()
+        lgd(f' yOLI entryID: {yOLI.EntryID }')
+
+        yInsp=None
+
+        if yOLI is not null:
+            # base on updateOLI() above
+            yInsp =yOLI.GetInspector  
+            yInsp.Activate()     
+            yWDoc =yInsp.WordEditor 
+          
+
+            if yWDoc.ProtectionType != C.wdNoProtection: 
+                yWDoc.Unprotect()
+
+            
+            yWDoc.Content.Delete()  
+            ySel=yWDoc.Windows(1).Selection 
+            yRng=ySel.Range
+
+            lgd(f"rng: {type(yRng)}")
+            
+            yRng.Move(Unit=C.wdStory, Count=-1) #w, perfectly and one step!  
+            
+           
+            
+
+            #Top of table
+            yTString=f"Summary table; created at: {datetime.datetime.now().strftime('%x;  %X')}"           
+            yRng =yWDoc.Characters(1)
+            yRng.InsertBefore( yTString )
+          
+            yRng.Collapse(Direction=C.wdCollapseEnd)
+
+            #insert table
+            yWDoc.Tables.Add(Range=yRng, NumRows=len(yDF), NumColumns=3,
+                                DefaultTableBehavior=C.wdWord9TableBehavior, AutoFitBehavior=C.wdAutoFitFixed)
+
+            yWDTbl=yWDoc.Tables(yWDoc.Tables.Count)
+            yWDTbl.Title = "Summary"
+            yWDTbl.ID = 123
+
+            lgw(f" yDF len : {len(yDF)};  ")
+            for i in range(1, len(yDF)):
+                
+                lgw(f" cell [{i},1 ] is {yDF['Symbol'].iloc[i]} ")
+                ##########################################
+                #https://docs.microsoft.com/en-us/office/vba/api/word.cell
+                yRng=yWDTbl.Cell(i,2).Range
+
+                #lgw(f'yRng is a range 1')
+                #yRng.Collapse(Direction=C.wdCollapseStart)
+                yRng.Text=f"{yDF['Symbol'].iloc[i]}"
+                
+                #lgw(f'yRng is a range 2')
+                yHL=yWDoc.Hyperlinks.Add(Anchor=yRng, Address=f"Outlook:{yDF['Link2OLI'].iloc[i]}", TextToDisplay=f"{yDF['Symbol'].iloc[i] } ")
+
+                yString=f"Price Date:{yDF['PriceDate'].iloc[i]} ; Close: {yDF['Close'].iloc[i]} ; Volume: {yDF['Volume'].iloc[i]} "    
+
+                yRng=yHL.Range
+                yRng.Collapse(Direction=C.wdCollapseEnd)
+                yRng.InsertBreak(C.wdLineBreak)  # https://docs.microsoft.com/en-us/office/vba/api/word.wdbreaktype
+                yRng.InsertAfter(f"{yString}")
+
+                                
+                ########################################
+                yRng=yWDTbl.Cell(i,1).Range
+                yRng.Collapse(Direction=C.wdCollapseStart)
+                yFPth=yDF['Link2Plot'].iloc[i]
+
+                lgw(f" yFilePath : {yFPth} ")
+                yPic=yRng.InlineShapes.AddPicture(yFPth, True, True)
+                yPic.ScaleHeight=75
+                yPic.ScaleWidth=75
+
+                ########################################
+                yRng=yWDTbl.Cell(i,3).Range
+                yRng.Collapse(Direction=C.wdCollapseStart)
+                yString=f"Flags:{yDF['Flag'].iloc[i]} ; cost: {yDF['Cost'].iloc[i]} ; Shares: {yDF['Shares'].iloc[i]} "    
+
+                yRng.Text=f"{yString}"
+
+
+            yInsp.Close(C.olSave)
+
+    except:
+        lge("failed")    
+    finally:
+        a=1
 
 
 #########################################################################

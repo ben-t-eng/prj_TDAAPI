@@ -42,12 +42,14 @@ lg=alog.BTLogger( stdout_filter=alog.yfilter20, stream_filter=alog.yfilter40)
 
 
 # %%
+# imports
 from io import StringIO
 from signal import SIG_DFL
 #####################
 import sys 
 import datetime
 import a_utils
+import a_Settings
 ################
 import a_Stock_IF
 #################
@@ -82,17 +84,14 @@ import a_TA1_Plt
 import a_FinViz
 
 # %%
-def updateSummaryOLI(yDF):
-    try:
-        a=1
-    except:
-        a=1
+# sumnmary DF
+
 
 def genSummaryDF():
     try:
         yDF=pd.DataFrame(
         { "Datetime":[datetime.datetime.now()],    
-          "Sec":['Summary'],
+          "Symbol":['Summary'],
           "Close":[1],
           "Volume" : [2],
           "PriceDate":[np.NaN],
@@ -109,140 +108,148 @@ def genSummaryDF():
         return yDF
 
 # %%
-# TDAAPI starting Cell;   from Outlook list of securities 
-only_Selected=0   # only OLI with [Selected] is true
-testrun=1          # only use saved data file in csv format, not need to connect to internew
-only_exclamation=0 # only those outlook exclamation marked items are updated
-####################################
-# for compressed buy, sell and shares + cost need to set "due date" to take effect, 
-# once set, they are not changed until further change
-# compressed buy, sell and shares + cost effect is sticky , changes are made in  \Sec folder
-# 
-# for events, OLI subject and "eventdate" are required to put it on the chart 
-# events are single date items, need to be added in \history foldler 
-# 
+# TDAAPI mainEntry function   from Outlook list of securities 
+def mainEntry(only_Selected=0, testrun=1 ):
+    ##only_Selected=0   # only OLI with [Selected] is true
+    ##testrun=1          # only use saved data file in csv format, not need to connect to internew
+    only_exclamation=0 # only those outlook exclamation marked items are updated
+    ####################################
+    # for compressed buy, sell and shares + cost need to set "due date" to take effect, 
+    # once set, they are not changed until further change
+    # compressed buy, sell and shares + cost effect is sticky , changes are made in  \Sec folder
+    # 
+    # for events, OLI subject and "eventdate" are required to put it on the chart 
+    # events are single date items, need to be added in \history foldler 
+    # 
 
 
-ySummaryDF=genSummaryDF()
+    ySummaryDF=genSummaryDF()
 
-#https://stackoverflow.com/questions/50127959/win32-dispatch-vs-win32-gencache-in-python-what-are-the-pros-and-cons
-## yWD= win32.gencache.EnsureDispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
-## yOL = win32.gencache.EnsureDispatch("Outlook.Application")  #w, needed for importing constants:
-yWD= win32.dynamic.Dispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
-yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
-
-
-yNS = yOL.GetNamespace("MAPI")
-yFolder = yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities']
-yFolder1 =yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities'].Folders['History']
-
-for yOLI in yFolder.Items:
-    print(yOLI.UserProperties.Find("SEC").Value +'-------------------------------------------------------------')
-    # flush the string_io for next security
-    lg.FlushStringIO()
-
-   
-    #################################################################
-    #only go further for those are marked "Test" in OLI subject field
-    yMsg=''
-    if testrun==1  and yOLI.Subject  !='Test':
-        continue
-    elif testrun==1 :
-        yMsg=" -------> Using Test Data <-------" 
-
-     
-    #https://docs.microsoft.com/en-us/office/vba/api/outlook.olimportance
-    #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.importance
-    if only_exclamation==1 and yOLI.Importance!= 2: continue
-
-    if only_Selected==1 and yOLI.UserProperties.Find("SELECTED") is None: continue 
-    if only_Selected==1 and yOLI.UserProperties.Find("SELECTED").Value == False : continue
+    #https://stackoverflow.com/questions/50127959/win32-dispatch-vs-win32-gencache-in-python-what-are-the-pros-and-cons
+    ## yWD= win32.gencache.EnsureDispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
+    ## yOL = win32.gencache.EnsureDispatch("Outlook.Application")  #w, needed for importing constants:
+    yWD= win32.dynamic.Dispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
+    yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
 
 
-    ################################################################
-    #good
-    yOLI1=yOLI.Copy() # for gettingh the latest setting from user, so compressedBS and Event info can be on plot
-    yOLI1.Move(yFolder1)
+    yNS = yOL.GetNamespace("MAPI")
+    yFolder = yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities']
+    yFolder1 =yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities'].Folders['History']
+
+    for yOLI in yFolder.Items:
+        print(yOLI.UserProperties.Find("SEC").Value +'-------------------------------------------------------------')
+        # flush the string_io for next security
+        lg.FlushStringIO()
+
     
+        #################################################################
+        #only go further for those are marked "Test" in OLI subject field
+        yMsg=''
+        if testrun==1  and yOLI.Subject  !='Test':
+            continue
+        elif testrun==1 :
+            yMsg=" -------> Using Test Data <-------" 
+
+        
+        #https://docs.microsoft.com/en-us/office/vba/api/outlook.olimportance
+        #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.importance
+        if only_exclamation==1 and yOLI.Importance!= 2: continue
+
+        if only_Selected==1 and yOLI.UserProperties.Find("SELECTED") is None: continue 
+        if only_Selected==1 and yOLI.UserProperties.Find("SELECTED").Value == False : continue
+
+        if yOLI.UserProperties.Find("Sec").Value == "Summary": continue
+
+        ################################################################
+        #good
+        yOLI1=yOLI.Copy() # for gettingh the latest setting from user, so compressedBS and Event info can be on plot
+        yOLI1.Move(yFolder1)
+        
+        
+        yO_S=a_OL_IF.OLI_Stock(yOLI,lg)
+        yO_S.InitStock()
+
+
+        if yO_S.Stock.GetHist(testrun) == 0: continue  # 20220218 , changed from 1 to 0 ; 1 for testing, 0 for getting data from TDA 
+
+        yTA3=a_TA1_Plt.TA1(yO_S.Stock) 
+        yTA3.createPriceDS() 
+
+        #print('TAS=', yTA3.TAs)
+        #print( 'Prices=', yTA3.prices)
+
+        yTA3.set_TAs()
+
+        #print("ta3=", yTA3.TAs)
+        yPlt=a_TA1_Plt.TA1_Plt()    
+
+        yO_S.Stock.SaveHist()
+        yPlt.plt_all(yTA3)
+
     
-    yO_S=a_OL_IF.OLI_Stock(yOLI,lg)
-    yO_S.InitStock()
+        #get plot from FinViz.com
+        yFV=a_FinViz.FinViz()
+        yFV.getChart(yO_S.Stock)
 
+        #save hist here so to include TA1 data
+        ###yO_S.Stock.SaveHist()
 
-    if yO_S.Stock.GetHist(testrun) == 0: continue  # 20220218 , changed from 1 to 0 ; 1 for testing, 0 for getting data from TDA 
+        # lgi(" before Updating OLI")
 
-    yTA3=a_TA1_Plt.TA1(yO_S.Stock) 
-    yTA3.createPriceDS() 
+        yO_S.UpdateOLI(yMsg)
+        
+        #! if OLI save with error not tringgering lge, lgd, something is wrong with outlook,
+        #! disable the addins in outlook, outlookchangenotifier is especially suspicious
+        yOLI.Save()
+        lgw("debug1")
+        #so to save a new copy to /history/ folder
+        # delete the previous one for compressedBD and event processing
+        yOLI1.Delete()
 
-    #print('TAS=', yTA3.TAs)
-    #print( 'Prices=', yTA3.prices)
+        #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.copy
+        yOLI2=yO_S.OLI.Copy()
+        #copy newly processed item from \sec to\ history
+        lgw("debug2")
+        yOLI2.Move(yFolder1)
+        a_OL_IF.OLICleanup1(yO_S.OLI) 
+        lgw("debug3")
 
-    yTA3.set_TAs()
+        #delete the eventdate and due date
+        
+        lgw("debug4")
+        yO_S.OLI.Close(0)  #! save the outlook item, error means something wrong in writing to OLI 
 
-    #print("ta3=", yTA3.TAs)
-    yPlt=a_TA1_Plt.TA1_Plt()    
+        yO_S.Stock.SummaryDF(ySummaryDF, "1212121ID")
 
-    yO_S.Stock.SaveHist()
-    yPlt.plt_all(yTA3)
-
-   
-    #get plot from FinViz.com
-    yFV=a_FinViz.FinViz()
-    yFV.getChart(yO_S.Stock)
-
-    #save hist here so to include TA1 data
-    ###yO_S.Stock.SaveHist()
-
-    # lgi(" before Updating OLI")
-
-    yO_S.UpdateOLI(yMsg)
-    
-    #! if OLI save with error not tringgering lge, lgd, something is wrong with outlook,
-    #! disable the addins in outlook, outlookchangenotifier is especially suspicious
-    yOLI.Save()
-    
-    #so to save a new copy to /history/ folder
-    # delete the previous one for compressedBD and event processing
-    yOLI1.Delete()
-
-    #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.copy
-    yOLI2=yOLI.Copy()
-    #copy newly processed item from \sec to\ history
-    
-    yOLI2.Move(yFolder1)
-    a_OL_IF.OLICleanup1(yOLI) 
-   
-
-    #delete the eventdate and due date
-     
   
-    yOLI.Close(0)  #! save the outlook item, error means something wrong in writing to OLI 
 
-    yO_S.Stock.SummaryDF(ySummaryDF, yOLI2.EntryID)
-
-
-#updateSummaryOLI(ySummaryDF) 
-lgw(f"{ySummaryDF}")
+    a_utils.DF2CSV(ySummaryDF, a_Settings.URL_debug_data_path, "SummaryDF")
+    a_OL_IF.updateSummaryOLI(ySummaryDF,  yFolder) 
+    #lgw(f"Summary DF= {ySummaryDF}")
 
 
-print(">>>>>>>>>>>>Finsihed iteration of SEC OLIs")    
-    
-yWD=None
-yOL=None   
+    print(">>>>>>>>>>>>Finsihed iteration of SEC OLIs")    
+        
+    yWD=None
+    yOL=None   
 
 
 
+######################################################
 # %%
+# running mainEntry ()
+if __name__ == "__main__" :
+    mainEntry(only_Selected=1, testrun=0) 
+
+
+###################################################
+#%%
 # testing module code
 ###################################################
 
-def steps():
-    a=1
-    b=2
 
 # %%
 if __name__ == "__main__" :
     yDF= genSummaryDF()
     print (yDF)
 
-# %%

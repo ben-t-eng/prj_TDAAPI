@@ -349,6 +349,7 @@ class Stock:
 
         #yOL=None
 
+    # deplecated , use set_CmprsdData()
     def set_CmprsdData_original(self, FieldNm, Sec):   #w! with [due date]
     #this required outllook "due date"  aka taskduedate in VBA to be set     
     # fieldnm must be a userproperty in OLI and a numerical number ,e.g. > 0  
@@ -414,7 +415,7 @@ class Stock:
         yOL=None        
 
     def set_CmprsdData(self, FieldNm, Sec):    #? for using [effdate]
-    #? testing effdate    
+    #testing effdate    
     #this required outllook "due date"  aka taskduedate in VBA to be set     
     # fieldnm must be a userproperty in OLI and a numerical number ,e.g. > 0  
         try:       
@@ -452,7 +453,8 @@ class Stock:
 
             #https://stackoverflow.com/questions/50728378/sorting-outlook-tasks-by-user-defined-field-in-vba
             #https://docs.microsoft.com/en-us/office/vba/api/outlook.folder.gettable
-            # w!
+            # w! option2 sort by OL table vs option1 sort by OL folder items ( can;t sort by User propoerty)
+            
             yOLTable=yFolder1.GetTable(sFilter) #w! 
             yOLTable.Sort(SortProperty="[Effdate]", Descending= False ) #w!, 
             #lgw (f"OLtable count : {yOLTable.GetRowCount()} ")
@@ -543,6 +545,8 @@ class Stock:
             lge(" failed ")
 
 
+
+
     def GetHist_TDA(self):
 
         ySDate=a_utils.epoch_from_today( Yr=1, Mo=0, Day=0) 
@@ -551,7 +555,7 @@ class Stock:
         return df
 
     def SummaryDF(self, yDF, yOLIID):
-
+        yNL='\n'    
         yFlagTxt=self.genFlagTxt()
         yLink2OLI=yOLIID      # self.genLink2OLI()
         yLink2Plt= self.TA1['Strategies']['FinViz']['plt_loc'][-1]            # self.genLink2Plt()
@@ -560,9 +564,13 @@ class Stock:
         ### self.HistDF['volume'][-1], self.HistDF.tail(1).index.values[-1] ,self.HistDF['Cost'][-1], 
         ### self.HistDF['Shares'][-1], yFlagTxt, yLink2Plt, yLink2OLI]  
 
-        yDF.loc[len(yDF.index)]=[datetime.datetime.now(),self.HistDF['symbol'].tail(1), self.HistDF['close'].tail(1), 
-        self.HistDF['volume'].tail(1), self.HistDF.tail(1).index.values[-1] ,self.HistDF['Cost'].tail(1), 
-        self.HistDF['Shares'].tail(1), yFlagTxt, yLink2Plt, yLink2OLI]  
+        yDF.loc[len(yDF.index)]=[datetime.datetime.now(),self.HistDF['symbol'].to_numpy()[-1], self.HistDF['close'].iloc[-1], 
+        self.HistDF['volume'].to_numpy()[-1], self.HistDF.index.to_numpy()[-1] ,self.HistDF['Cost'].iloc[-1], 
+        self.HistDF['Shares'].iloc[-1], yFlagTxt, yLink2Plt, yLink2OLI]  
+        lgw(f"DF size = {yNL} {self.HistDF.shape},{yNL} value = {yNL} {self.HistDF.iloc[-1].to_numpy()} ")
+        lgw(f"added row symbol is {self.HistDF['symbol'].to_numpy()[-1]}, {self.HistDF['close'].iloc[-1]}")
+
+        
 
         #nW yNpA=np.array([datetime.datetime.now(),self.HistDF['symbol'][-1], self.HistDF['close'][-1], 
         #nW self.HistDF['volume'][-1], self.HistDF.tail(1).index.values[-1] ,self.HistDF['Cost'][-1], self.HistDF['Shares'][-1],
@@ -578,7 +586,7 @@ class Stock:
         #debugging
         #works but w/ Py warning: self.HistDF['SMA_Buy'][-1]=1122
         #works self.HistDF['SMA_Buy'].to_numpy()[-1]=1122
-        self.HistDF.loc[-1, 'SMA_Buy']=1122
+        self.HistDF['SMA_Buy'].iloc[-1]=1122
         ##########
 
         #lgw(f"histDF row: {self.HistDF.tail(1)}")
@@ -603,6 +611,9 @@ class Stock:
         finally:
             return yFlagText
 
+
+
+
 ###########################################################
 # %%
 def test1():
@@ -620,8 +631,13 @@ def test1():
     #w z1=df1.tail(1)['b'].to_numpy()[1]
     #NW ! z1=df1.loc[-1, 'b']
     #w z1=df1.loc[:,'b'].to_numpy()[-1]
-    df1.loc[-1,'b'] =321
-    z1=df1.loc[1:'z','b']       # allow: -1, : , 1:2; 1:'z';  nw: 0:2;  
+    #w df1.index.to_numpy()[-1] =321
+    #w z1=df1['b'].tail(1).to_numpy()[-1]     # allow: -1, : , 1:2; 1:'z';  nw: 0:2;  
+    #w! df1['b'].to_numpy()[-1]=704
+    #w! df1['b'].iloc[-1]=705
+    df1.loc[[2,1],'b']=700
+    #nW! z1=df1.index.iloc[-1]
+   
     #      a  b   c
     #   1  4  7  10
     #   2  5  8  11
@@ -632,9 +648,10 @@ def test1():
     ### z1=df123['b'][2] =8   # df[clm nm][row nm] == df.loc [row nm, clm nm ]; df.iloc[ridx, cidx]
 
     #z1=df1.loc["z",:]
-    df1.loc[len(df1.index)]=[11,22,33]
-    df1.loc[2]=[111,222,333]
-    print(f" df type= {type(z1)}, z1: { z1}  , df1: {df1}  ")    
+    #df1.loc[len(df1.index)]=[11,22,33]
+    #df1.loc[2]=[111,222,333]
+    yNL='\n'
+    print(f" df type= {type(z1)}, {yNL} z1: { z1}, {yNL} df1: {df1}  ")    
 
 # %% running tests
 if __name__ == '__main__':

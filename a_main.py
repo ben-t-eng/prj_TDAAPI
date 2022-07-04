@@ -31,12 +31,13 @@ from logging import error    as lge   #40
 from logging import critical as lgc
 #from types import NoneType
 
-from sqlalchemy import null   #50 #
+#?from sqlalchemy import null   #50 #
 
 # step 2, select one of below line 
 import a_logging as alog
+lglb=alog.lg_line_break
 # to customize the logging obj, all format propregate to root logging obj
-lg=alog.BTLogger( stdout_filter=alog.yfilter20, stream_filter=alog.yfilter40)
+lg=alog.BTLogger( stdout_filter=alog.yfilter30, stream_filter=alog.yfilter40)
 
 
 
@@ -126,8 +127,8 @@ def mainEntry(only_Selected=0, testrun=1 ):
     ySummaryDF=genSummaryDF()
 
     #https://stackoverflow.com/questions/50127959/win32-dispatch-vs-win32-gencache-in-python-what-are-the-pros-and-cons
-    ## yWD= win32.gencache.EnsureDispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
-    ## yOL = win32.gencache.EnsureDispatch("Outlook.Application")  #w, needed for importing constants:
+    ##yWD= win32.gencache.EnsureDispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
+    ##yOL = win32.gencache.EnsureDispatch("Outlook.Application")  #w, needed for importing constants:
     yWD= win32.dynamic.Dispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
     yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
 
@@ -201,29 +202,45 @@ def mainEntry(only_Selected=0, testrun=1 ):
         #! if OLI save with error not tringgering lge, lgd, something is wrong with outlook,
         #! disable the addins in outlook, outlookchangenotifier is especially suspicious
         yOLI.Save()
-        lgw("debug1")
+        #lgw("debug1")
         #so to save a new copy to /history/ folder
         # delete the previous one for compressedBD and event processing
         yOLI1.Delete()
 
         #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.copy
         yOLI2=yO_S.OLI.Copy()
+        
         #copy newly processed item from \sec to\ history
-        lgw("debug2")
+        #lgw("debug2")
+        OLIid0=yOLI.EntryID
+        OLIid2= yOLI2.EntryID
+
         yOLI2.Move(yFolder1)
-        a_OL_IF.OLICleanup1(yO_S.OLI) 
-        lgw("debug3")
+        OLIid2m= yOLI2.EntryID
 
         #delete the eventdate and due date
+        a_OL_IF.OLICleanup1(yO_S.OLI) 
         
-        lgw("debug4")
-        yO_S.OLI.Close(0)  #! save the outlook item, error means something wrong in writing to OLI 
 
-        yO_S.Stock.SummaryDF(ySummaryDF, "1212121ID")
+        yOLI2.Save()
+        yOLI2.Close(0)
+       
+        lgd(f' sec={yOLI.UserProperties.Find("SEC").Value} {lglb}, OLIid0     ={OLIid0},{lglb}, OLIid2     ={OLIid2}, {lglb}, OLIid2m    ={OLIid2m}, {lglb}, OLIid2close={yOLI2.EntryID}; {lglb}')
+
+
+        #lgw("debug4")
+        yO_S.OLI.Close(0)  #! save the outlook item, error means something wrong in writing to OLI 
+        # 7/3, 611f18d (HEAD -> main, origin/main) w/ RPC server issue, but summaryOLI is almost done
+        # is now functional without "RPC not available" issue 
+        # without specific change on window 10 !!!!!!!need to have outlook running 
+        
+        #works with yOLI.EntryID, but not with yOLI2.EntryID, why???070422
+        yO_S.Stock.SummaryDF(ySummaryDF, yOLI2.EntryID) 
 
   
-
+    #debug dataframe
     a_utils.DF2CSV(ySummaryDF, a_Settings.URL_debug_data_path, "SummaryDF")
+    
     a_OL_IF.updateSummaryOLI(ySummaryDF,  yFolder) 
     #lgw(f"Summary DF= {ySummaryDF}")
 

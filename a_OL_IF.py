@@ -513,9 +513,15 @@ def updateSummaryOLI(yDF, yFolder):
         yOLI=I2.GetFirst()
         lgd(f' yOLI entryID: {yOLI.EntryID }')
 
+        #init the variable 
         yInsp=None
+        
 
         if yOLI is not null:
+
+            yOLI1=yOLI.Copy()
+            yOLI1.Move(yFolder.Folders['History'])
+
             # base on updateOLI() above
             yInsp =yOLI.GetInspector  
             yInsp.Activate()     

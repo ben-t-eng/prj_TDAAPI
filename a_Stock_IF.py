@@ -11,6 +11,9 @@ from sqlalchemy import column, null
 sys.path.append ('..\TDAAPI')
 import a_TDA_IF 
 import a_utils
+from a_utils import xL2UTC
+from a_utils import xLB
+
 import talib
 import pandas as pd
 import numpy as np
@@ -24,6 +27,7 @@ from logging import info     as lgi   #20
 from logging import warning  as lgw   #30
 from logging import error    as lge   #40
 from logging import critical as lgc   #50 
+
 
 
 import a_Settings
@@ -554,24 +558,39 @@ class Stock:
 
         return df
 
-    def SummaryDF(self, yDF, yOLIID):
-        yNL='\n'    
+    def updateSummaryDF(self, yDF, yOLI):
+          
         yFlagTxt=self.genFlagTxt()
-        yLink2OLI=yOLIID      # self.genLink2OLI()
+        yLink2OLI=yOLI.EntryID      # self.genLink2OLI()
         yLink2Plt= self.TA1['Strategies']['FinViz']['plt_loc'][-1]            # self.genLink2Plt()
        
+        if yOLI.UserProperties.Find("LSUpdate") is None:
+            yLSUpdate= a_utils.DateTime2UTC4OLI(datetime.datetime.now())
+            lge(f"{self.Symbol} LSUpdate value is null")
+        else: 
+            #yLSUpdate is set as GMT time, but its value is local time
+            yLSUpdate=yOLI.UserProperties.Find("LSUpdate").Value  #pywintypes.datetime can't not be assigned to np.dt 
+
+        yPriceD=self.HistDF.index.to_numpy()[-1]
+
+        # datetime to stamp and to datetime takes input as gmt and convert it to local time
+        yLSUpdate1=yLSUpdate.astimezone() - xL2UTC   # assign it with local time zone but also correct the offset reading from from OLI 
+        
+        # convert from pywin32 dt to python dt so that yLSUpdate2 can be assign to DataFrame
+        yLSUpdate2=datetime.datetime.fromtimestamp((datetime.datetime.timestamp(yLSUpdate1)))
+        lgd(f' LSUpdate1= {yLSUpdate1} {yLSUpdate1.tzinfo}, after timestamp conv {yLSUpdate2} {yLSUpdate2.tzinfo} ; yLSU2 utcoffset {yLSUpdate2.utcoffset()} ' )
         ### yDF.loc[len(yDF.index)]=[datetime.datetime.now(),self.HistDF['symbol'][-1], self.HistDF['close'][-1], 
         ### self.HistDF['volume'][-1], self.HistDF.tail(1).index.values[-1] ,self.HistDF['Cost'][-1], 
         ### self.HistDF['Shares'][-1], yFlagTxt, yLink2Plt, yLink2OLI]  
 
         yDF.loc[len(yDF.index)]=[datetime.datetime.now(),self.HistDF['symbol'].to_numpy()[-1], self.HistDF['close'].iloc[-1], 
         self.HistDF['volume'].to_numpy()[-1], self.HistDF.index.to_numpy()[-1] ,self.HistDF['Cost'].iloc[-1], 
-        self.HistDF['Shares'].iloc[-1], yFlagTxt, yLink2Plt, yLink2OLI]  
-        lgw(f"DF size = {yNL} {self.HistDF.shape},{yNL} value = {yNL} {self.HistDF.iloc[-1].to_numpy()} ")
-        lgw(f"added row symbol is {self.HistDF['symbol'].to_numpy()[-1]}, {self.HistDF['close'].iloc[-1]}")
+        self.HistDF['Shares'].iloc[-1], yFlagTxt, yLink2Plt, yLink2OLI, 'note', yLSUpdate2, len(yFlagTxt) ]  
+
+        lgd(f"DF size = {xLB} {self.HistDF.shape},{xLB} value = {xLB} {self.HistDF.iloc[-1].to_numpy()} ")
+        lgd(f"added row symbol is {self.HistDF['symbol'].to_numpy()[-1]}, {self.HistDF['close'].iloc[-1]}")
 
         
-
         #nW yNpA=np.array([datetime.datetime.now(),self.HistDF['symbol'][-1], self.HistDF['close'][-1], 
         #nW self.HistDF['volume'][-1], self.HistDF.tail(1).index.values[-1] ,self.HistDF['Cost'][-1], self.HistDF['Shares'][-1],
         #nw yFlagTxt, yLink2Plt, yLink2OLI])
@@ -583,30 +602,45 @@ class Stock:
         lgd('Stratgy = '+str(self.TA1)) 
         yFlagText=''
 
-        #debugging
+        ################################################
+        # debugging
         #works but w/ Py warning: self.HistDF['SMA_Buy'][-1]=1122
         #works self.HistDF['SMA_Buy'].to_numpy()[-1]=1122
-        self.HistDF['SMA_Buy'].iloc[-1]=1122
-        ##########
+        if self.HistDF['symbol'].iloc[-1] =='QQQ' :  self.HistDF['SMA_Sell'].iloc[-1]=1122
+        ################################################
 
         #lgw(f"histDF row: {self.HistDF.tail(1)}")
 
         try:
             for yStrategy in self.TA1['Strategies']:
                 try:
-                    lgw(f"strategy: {yStrategy}")
+                    if yStrategy=="FinViz" : continue 
+                    lgd(f"strategy: {yStrategy}")
+
                     ySignal=self.HistDF.tail(1)[f'{yStrategy}_Buy'].to_numpy()[-1]
-                    lgw(f"signal type: {type(ySignal)}")
+                    lgd(f"signal type: {type(ySignal)}")
                     if (ySignal is not null ) and not (pd.isna(ySignal)):
                         yFlagText=yFlagText + f"{yStrategy}_Buy at {ySignal}; "
-                        lgw(f"signal: {ySignal}")
+                        lgd(f"signal: {ySignal}")
+
+                    ySignal=self.HistDF.tail(1)[f'{yStrategy}_Sell'].to_numpy()[-1]
+                    lgd(f"signal type: {type(ySignal)}")
+                    if (ySignal is not null ) and not (pd.isna(ySignal)):
+                        yFlagText=yFlagText + f"{yStrategy}_Sell at {ySignal}; "
+                        lgd(f"signal: {ySignal}")    
+
+                    
+                        
                 except:
                     lge(f"failed at {yStrategy}")
+                    yFlagText=''
                 finally:
+                    
                     continue
                         
         except:
             lge('failed')
+            yFlagText=''
 
         finally:
             return yFlagText
@@ -650,8 +684,8 @@ def test1():
     #z1=df1.loc["z",:]
     #df1.loc[len(df1.index)]=[11,22,33]
     #df1.loc[2]=[111,222,333]
-    yNL='\n'
-    print(f" df type= {type(z1)}, {yNL} z1: { z1}, {yNL} df1: {df1}  ")    
+
+    print(f" df type= {type(z1)}, {xLB} z1: { z1}, {xLB} df1: {df1}  ")    
 
 # %% running tests
 if __name__ == '__main__':

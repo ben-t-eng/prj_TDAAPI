@@ -25,6 +25,7 @@ from logging import info     as lgi   #20
 from logging import warning  as lgw   #30
 from logging import error    as lge   #40
 from logging import critical as lgc   #50 
+import a_Settings
 
 # yfilter=(a_utils.LevelFilter((logging.INFO, logging.CRITICAL, logging.DEBUG)) , a_utils.LevelFilter((logging.INFO, logging.CRITICAL, logging.DEBUG)))
 # yfilter2=(a_utils.LevelFilter((logging.INFO, logging.DEBUG, logging.ERROR)) , a_utils.FileFilter())
@@ -134,20 +135,20 @@ class OLI_Stock :
             # outlook userproperty stores time in GMT (UTC), when set, it auto change to UTC by know system time is PST 
             # therefore add 6-7 hours ( ahead) 
             sma_dict=str(self.Stock.TA1['Strategies']['SMA']['Params'])
-            lgw(f'UpdateOLIFields() OK8 {sma_dict}; ydt5={yDT5}')
+            lgd(f'UpdateOLIFields() OK8 {sma_dict}; ydt5={yDT5}')
             #https://docs.microsoft.com/en-us/office/vba/api/outlook.oluserpropertytype
             #https://docs.microsoft.com/en-us/office/vba/api/outlook.timezone.standardbias
 
             #tz=self.OLI.Application.TimeZones.CurrentTimeZone
             #lgd('timezone Bias:', tz.Bias, '; daylight b:', tz.DaylightBias, '; std b ;', tz.StandardBiaz ) 
 
-            self.SetOLIUsrProp( "LSUDate", a_utils.DateTime2UTC4OLI(datetime.datetime.now()) , C.olDateTime)       #last success update date
+            self.SetOLIUsrProp( "LSUpdate", a_utils.DateTime2UTC4OLI(datetime.datetime.now()) , C.olDateTime)       #last success update date
             ###self.SetOLIUsrProp( "LSUDate", datetime.datetime.now() , C.olDateTime)
 
             #########################20220607
             ## when run cell returns with "RPC server not found" or other msg NOT from python exception msg 
             ## it is likely the issue is with outlook addin setting of 
-            lgw(f'OK9')
+            lgd(f'OK9')
 
             self.OLI.Save()
 
@@ -274,7 +275,7 @@ class OLI_Stock :
             # yWDoc.Close(SaveChanges=-1)
             # yWDoc.Save()
             yInsp.Close(C.olSave) #nw, no need 
-            self.OLI.Save()   # to call in main loop
+            #self.OLI.Save()   # to call in main loop
             lgd("OLIUpdate finally closed at: ")
 
     def insertEvents1(self):
@@ -356,6 +357,7 @@ class OLI_Stock :
 
       
         return
+        
 
     def InsertImage(self, yRng):
                     # iterate over the list:
@@ -482,6 +484,10 @@ def OLICleanup1(yOLI):
             if  yUP is not None:
                 yUP.Delete()       #w!, this deletes eventdate not delete() !!   
 
+            yUP=yOLI.UserProperties.Find("Update")
+            if  yUP is not None:
+                yUP.Delete()
+                #yOLI.SetOLIUsrPropDir(yOLI,'Update', '',1) 
 
             #lgw(f"3. set date to {yDT}")
             #self.SetOLIUsrProp("EventDate", a_utils.DateTime2UTC4OLI(datetime.datetime.now()) , C.olDateTime)
@@ -501,22 +507,20 @@ def updateSummaryOLI(yDF, yFolder):
     try:
         
 
-        sFilter=f"[SEC]='Summary'  " 
-        
-        
+       
+    
         yFolder.Items.Sort(Property="[LastModificationTime]", Descending= True ) 
         #only the first entry is use
-        
 
+        sFilter=f"[SEC]='Summary'  " 
         I2=yFolder.Items.Restrict(sFilter)
-        lgw(f' I2 len: { I2.Count }')
+        lgd(f' I2 len: { I2.Count }')
         yOLI=I2.GetFirst()
         lgd(f' yOLI entryID: {yOLI.EntryID }')
 
         #init the variable 
         yInsp=None
         
-
         if yOLI is not null:
 
             yOLI1=yOLI.Copy()
@@ -559,21 +563,29 @@ def updateSummaryOLI(yDF, yFolder):
             yWDTbl.ID = 123
 
             lgw(f" yDF len : {len(yDF)};  ")
-            for i in range(1, len(yDF)):
+            #ignore the first row as the template setter 
+            yDF2=yDF.loc[yDF.index >0 ]
+
+            yDF1=yDF2.sort_values('Sort', ascending=False)
+            yDF1.reset_index(drop=True, inplace=True)
+            a_utils.DF2CSV(yDF1, a_Settings.URL_debug_data_path, "SummaryDF")
+
+            lgw(f'summary DF shape { yDF1.shape}')
+            for i in range(0, len(yDF1)):
                 
-                lgw(f" cell [{i},1 ] is {yDF['Symbol'].iloc[i]} ")
+                lgd(f" cell [{i},1 ] is {yDF1['Symbol'].iloc[i]} ")
                 ##########################################
                 #https://docs.microsoft.com/en-us/office/vba/api/word.cell
                 yRng=yWDTbl.Cell(i,2).Range
 
                 #lgw(f'yRng is a range 1')
                 #yRng.Collapse(Direction=C.wdCollapseStart)
-                yRng.Text=f"{yDF['Symbol'].iloc[i]}"
+                yRng.Text=f"{yDF1['Symbol'].iloc[i]}"
                 
                 #lgw(f'yRng is a range 2')
-                yHL=yWDoc.Hyperlinks.Add(Anchor=yRng, Address=f"Outlook:{yDF['Link2OLI'].iloc[i]}", TextToDisplay=f"{yDF['Symbol'].iloc[i] } ")
+                yHL=yWDoc.Hyperlinks.Add(Anchor=yRng, Address=f"Outlook:{yDF1['Link2OLI'].iloc[i]}", TextToDisplay=f"{yDF1['Symbol'].iloc[i] } ")
 
-                yString=f"Price Date:{yDF['PriceDate'].iloc[i]} ; Close: {yDF['Close'].iloc[i]} ; Volume: {yDF['Volume'].iloc[i]} "    
+                yString=f"LSUpdate:{yDF1['LSUpdate'].iloc[i]}   ;Price Date:{yDF1['PriceDate'].iloc[i]} ; Close: {yDF1['Close'].iloc[i]} ; Volume: {yDF1['Volume'].iloc[i]} "    
 
                 yRng=yHL.Range
                 yRng.Collapse(Direction=C.wdCollapseEnd)
@@ -584,9 +596,9 @@ def updateSummaryOLI(yDF, yFolder):
                 ########################################
                 yRng=yWDTbl.Cell(i,1).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
-                yFPth=yDF['Link2Plot'].iloc[i]
+                yFPth=yDF1['Link2Plot'].iloc[i]
 
-                lgw(f" yFilePath : {yFPth} ")
+                lgd(f" yFilePath : {yFPth} ")
                 yPic=yRng.InlineShapes.AddPicture(yFPth, True, True)
                 yPic.ScaleHeight=75
                 yPic.ScaleWidth=75
@@ -594,7 +606,7 @@ def updateSummaryOLI(yDF, yFolder):
                 ########################################
                 yRng=yWDTbl.Cell(i,3).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
-                yString=f"Flags:{yDF['Flag'].iloc[i]} ; cost: {yDF['Cost'].iloc[i]} ; Shares: {yDF['Shares'].iloc[i]} "    
+                yString=f"Flags:{yDF1['Flag'].iloc[i]} ; cost: {yDF1['Cost'].iloc[i]} ; Shares: {yDF1['Shares'].iloc[i]} "    
 
                 yRng.Text=f"{yString}"
 
@@ -606,7 +618,36 @@ def updateSummaryOLI(yDF, yFolder):
     finally:
         a=1
 
+def SetOLIUsrPropDir(yOLI, Fieldnm, Value, FieldType=1):
+        #find field type from here
+        # https://docs.microsoft.com/en-us/office/vba/api/outlook.oluserpropertytype
+        # C.olCurrency=14, C.olDateTime=5, C.olText=1, C.olNumber=3 
 
+        lgd('SetOLIUsrProp='+ str(Fieldnm) + ', value string=' + str(Value) + ', value tpye =' + str (type(Value)))
+        #nu if Value == None:
+        #nu    lge('fail to set OL fields, Fieldnm='+ Fieldnm + '; Value type='+ type(Value))
+        #nu  return 
+
+        if yOLI.UserProperties.Find(Fieldnm) == None:
+            try:
+                yOLI.UserProperties.Add(Fieldnm, FieldType)
+                yOLI.UserProperties.Find(Fieldnm).Value=Value
+               # print ("ppp", 'SetOLIUserProp() ', Fieldnm, ',' , Value,', added')
+            except:
+                lge('ppp SetOLIUserProp() fieldnm= ' + str (Fieldnm)  + ', Value= ' + str (Value) + ' add failed')
+        else:
+            #nw OLItem.UserProperties.Find(Fieldnm).Value=Value
+            try: 
+                yPA= yOLI.PropertyAccessor
+                yProp=r"http://schemas.microsoft.com/mapi/string/{00020329-0000-0000-C000-000000000046}/" + Fieldnm
+                yPA.SetProperty(yProp,Value)
+
+                # print  ('ppp SetOLIUserProp() ', Fieldnm, ',' , Value ,', accessor done')
+            except:             
+                lge ('ppp SetOLIUserProp() '+ str(Fieldnm) + ',' + str(Value) + '  accessor failed ')
+
+      
+        return
 #########################################################################
 
 # %%

@@ -288,6 +288,18 @@ class BTLogger:
 #lgd=lambda y: logging.debug(y)
 
 
+# %%
+#defining tz offset, should use minus
+# datetime obj yDTfrom reading usr property datetime on OIL  is set as GMT time, 
+# but OL considers it local, yDT.astimezone() does not change dt value but adds -7 hr
+# yLSUpdate1=yLSUpdate.astimezone() - xL2UTC cancels the difference 
+# use this code : [from a_utils import xL2UTC] om the module file
+xL2UTC=datetime.datetime.now().astimezone().utcoffset()
+
+
+#lg linebreak for f'' string
+xLB="\n"
+
 # %% 
 # testing module codes 
 ################################################
@@ -299,4 +311,13 @@ if __name__ == "__main__" :
     #tradetimelong: 2022-05-10 16:58:13.837000 ; 
     #regularMarketTradeTimeInLong: 2022-05-10 13:00:00.523000
 
+# %%
+if __name__ == "__main__" : 
+    yDT=datetime.datetime.now()
+    print (f' yDT ={yDT}, tzname= {yDT.tzname}, tzinfo={yDT.tzinfo} ')
+    yDT1=yDT.astimezone()  # a    dd tz info to DT object
+    localTZinfo=yDT1.tzinfo    
+    print (f' yDT1 ={yDT1}, tzname1= {yDT1.tzname}, tzinfo1={yDT1.tzinfo} ')
+    print(f'xlocal2UTC= {xL2UTC} , offset={yDT1.utcoffset()}')
+   
 # %%

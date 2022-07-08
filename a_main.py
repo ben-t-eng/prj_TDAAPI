@@ -35,7 +35,7 @@ from logging import critical as lgc
 
 # step 2, select one of below line 
 import a_logging as alog
-lglb=alog.lg_line_break
+
 # to customize the logging obj, all format propregate to root logging obj
 lg=alog.BTLogger( stdout_filter=alog.yfilter30, stream_filter=alog.yfilter40)
 
@@ -50,6 +50,9 @@ from signal import SIG_DFL
 import sys 
 import datetime
 import a_utils
+from a_utils import xLB
+from a_utils import xL2UTC
+
 import a_Settings
 ################
 import a_Stock_IF
@@ -100,7 +103,10 @@ def genSummaryDF():
           "Shares":[0],
           "Flag":['Flags'], 
           "Link2Plot":['lk1'], 
-          "Link2OLI":['lk2']
+          "Link2OLI":['lk2'],
+          "Note":['notes'],
+          "LSUpdate":[datetime.datetime.now()],
+          "Sort":[0]
         },
     index=[0]) 
     except:
@@ -122,7 +128,7 @@ def mainEntry(only_Selected=0, testrun=1 ):
     # for events, OLI subject and "eventdate" are required to put it on the chart 
     # events are single date items, need to be added in \history foldler 
     # 
-
+    #   http://www.icodeguru.com/webserver/Python-Programming-on-Win32/ very through pages
 
     ySummaryDF=genSummaryDF()
 
@@ -137,19 +143,17 @@ def mainEntry(only_Selected=0, testrun=1 ):
     yFolder = yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities']
     yFolder1 =yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities'].Folders['History']
 
+    #####copy select sec OLIs from \sec to \history for further processing
     for yOLI in yFolder.Items:
-        print(yOLI.UserProperties.Find("SEC").Value +'-------------------------------------------------------------')
-        # flush the string_io for next security
-        lg.FlushStringIO()
+        #print(yOLI.UserProperties.Find("SEC").Value +'-------------------------------------------------------------')
+       
 
-    
         #################################################################
         #only go further for those are marked "Test" in OLI subject field
         yMsg=''
         if testrun==1  and yOLI.Subject  !='Test':
             continue
-        elif testrun==1 :
-            yMsg=" -------> Using Test Data <-------" 
+
 
         
         #https://docs.microsoft.com/en-us/office/vba/api/outlook.olimportance
@@ -163,9 +167,33 @@ def mainEntry(only_Selected=0, testrun=1 ):
 
         ################################################################
         #good
-        yOLI1=yOLI.Copy() # for gettingh the latest setting from user, so compressedBS and Event info can be on plot
-        yOLI1.Move(yFolder1)
         
+        a_OL_IF.SetOLIUsrPropDir(yOLI,'Update' , 'Updating',1)
+        yOLI.Close(0)  #w! this is required, or else OLI in \Sec [update] is not set to 'Updating'
+
+        yOLI1=yOLI.Copy()
+        a_OL_IF.SetOLIUsrPropDir(yOLI1, "EID", yOLI.EntryID, FieldType=1)
+        yOLI1.Save()
+        yOLI1.Move(yFolder1) 
+        lgd(f' EID = {yOLI1.UserProperties.Find("EID").Value }' )
+
+        yUpdateDT=datetime.datetime.now() # for filtering latest OLI
+        print(yOLI.UserProperties.Find("SEC").Value +' in \Sec--------------------')
+
+    # when adding new fields, need to add them manually at OL
+    
+    I2=yFolder1.Items.Restrict("[Update]='Updating' ") 
+    lgw(f' total sec to be updated {I2.Count}    ')
+    yUpdateDT=datetime.datetime.now() # for filtering latest OLI
+    for yOLI in I2:
+        
+        lg.FlushStringIO()
+
+        if yOLI.UserProperties.Find("Sec").Value == "Summary": continue
+
+        ################################################################
+        #good
+        print(yOLI.UserProperties.Find("SEC").Value +' in \history-------------------')
         
         yO_S=a_OL_IF.OLI_Stock(yOLI,lg)
         yO_S.InitStock()
@@ -198,6 +226,7 @@ def mainEntry(only_Selected=0, testrun=1 ):
         # lgi(" before Updating OLI")
 
         yO_S.UpdateOLI(yMsg)
+        ###070422 this update of deleting "Updating" confused the filter: a_OL_IF.SetOLIUsrPropDir(yOLI,'Update', 'Updated',1)  # done with updating, so next round, it is not selected per update
         
         #! if OLI save with error not tringgering lge, lgd, something is wrong with outlook,
         #! disable the addins in outlook, outlookchangenotifier is especially suspicious
@@ -205,44 +234,80 @@ def mainEntry(only_Selected=0, testrun=1 ):
         #lgw("debug1")
         #so to save a new copy to /history/ folder
         # delete the previous one for compressedBD and event processing
-        yOLI1.Delete()
+         #delete the original updating OLI at \sec 
+        yEID=yOLI.UserProperties.Find("EID").Value
+        lgd(f" EID is {yEID} ")
+
+        #delete the org in \sec 
+        yOLI3=yNS.GetItemFromID(yEID, yFolder.StoreID)
+        yOLI3.Delete()
+
 
         #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.copy
-        yOLI2=yO_S.OLI.Copy()
-        
-        #copy newly processed item from \sec to\ history
-        #lgw("debug2")
-        OLIid0=yOLI.EntryID
-        OLIid2= yOLI2.EntryID
+        yOLI2=yOLI.Copy()
 
-        yOLI2.Move(yFolder1)
-        OLIid2m= yOLI2.EntryID
-
-        #delete the eventdate and due date
-        a_OL_IF.OLICleanup1(yO_S.OLI) 
-        
-
+        a_OL_IF.OLICleanup1(yOLI2) 
         yOLI2.Save()
-        yOLI2.Close(0)
-       
-        lgd(f' sec={yOLI.UserProperties.Find("SEC").Value} {lglb}, OLIid0     ={OLIid0},{lglb}, OLIid2     ={OLIid2}, {lglb}, OLIid2m    ={OLIid2m}, {lglb}, OLIid2close={yOLI2.EntryID}; {lglb}')
+        yOLI2.Close(0) 
+        yOLI2.Move(yFolder)
 
-
+        # can't not clear "update" field within thie for loop due to the filter by [update]
         #lgw("debug4")
-        yO_S.OLI.Close(0)  #! save the outlook item, error means something wrong in writing to OLI 
+        yOLI.Close(0)  #! save the outlook item, error means something wrong in writing to OLI 
         # 7/3, 611f18d (HEAD -> main, origin/main) w/ RPC server issue, but summaryOLI is almost done
         # is now functional without "RPC not available" issue 
         # without specific change on window 10 !!!!!!!need to have outlook running 
         
         #works with yOLI.EntryID, but not with yOLI2.EntryID, why???070422
-        yO_S.Stock.SummaryDF(ySummaryDF, yOLI2.EntryID) 
+        yO_S.Stock.updateSummaryDF(ySummaryDF, yOLI) 
 
-  
-    #debug dataframe
-    a_utils.DF2CSV(ySummaryDF, a_Settings.URL_debug_data_path, "SummaryDF")
-    
     a_OL_IF.updateSummaryOLI(ySummaryDF,  yFolder) 
+    
+    #debug dataframe
+    #a_utils.DF2CSV(ySummaryDF, a_Settings.URL_debug_data_path, "SummaryDF")
+    
+    
+    
+
+    # not needed since eid is used to track and delete the one from \sec, as updated ones are copy to \sec
+    #delete original OLIs for update, clear updated OLIs [update] field
+    I1=yFolder.Items.Restrict("[Update]='Updating' ") 
+    lgd(f'clr udpate field for {I1.Count} \sec OLIs ')
+    for yOLI in I1:
+        try:
+            yLSUpdate=yOLI.UserProperties.Find("LSUpdate").Value
+            yLSUpdate1=yLSUpdate.astimezone() - xL2UTC
+            yLSUpdate2=datetime.datetime.fromtimestamp((datetime.datetime.timestamp(yLSUpdate1)))
+            lgw(f" yUpdate time {yUpdateDT} {type(yUpdateDT)}, yLSUpdate {yLSUpdate1} {type(yLSUpdate1)}")
+            
+            if yLSUpdate2 < yUpdateDT:
+                yOLI.Delete()
+                lgw(f'{yOLI.UserProperties.Find("LSUpdate").Value}, LSUpdate2 < UPdate start    ' )
+            else: 
+                a_OL_IF.SetOLIUsrPropDir(yOLI,'Update', ' ',1) 
+                yOLI.Save()
+        except:
+            lge('failed to clear update field')
+        
+
+    #clear oli with [update] field in \history
+    #this is necessary due to the previous for loop for \history is filter by [update] filter
+    # SW is confused if [update] is changed within the for loop 
+    yStrg=yUpdateDT.strftime("%m/%d/%y  %H:%M%p" )
+    I1=yFolder1.Items.Restrict(f"[LSUpdate] >= '{yStrg}' ") 
+    lgw(f' to clear update fields in  {I1.Count} \history OLIs; { yOLI.UserProperties.Find("LSUpdate").Value} > {yStrg}    ')
+    for yOLI in I1:
+        a_OL_IF.SetOLIUsrPropDir(yOLI,'Update', ' ',1) 
+        yOLI.Save()
+
     #lgw(f"Summary DF= {ySummaryDF}")
+
+    #########################
+    #debugging entryID chg when move OIL 
+    #I2=yFolder1.Items.Restrict("[Subject]='yOLI2' and [Sec]='QQQ' ") 
+    #yOLI3=I2.GetFirst()
+    #lgd(f' yOLI3 entryID: {yOLI3.EntryID }')
+    #########################
 
 
     print(">>>>>>>>>>>>Finsihed iteration of SEC OLIs")    
@@ -256,7 +321,8 @@ def mainEntry(only_Selected=0, testrun=1 ):
 # %%
 # running mainEntry ()
 if __name__ == "__main__" :
-    mainEntry(only_Selected=1, testrun=0) 
+    a=1
+    mainEntry(only_Selected=0, testrun=0) 
 
 
 ###################################################
@@ -266,7 +332,24 @@ if __name__ == "__main__" :
 
 
 # %%
+#w! for outlook table item filter on date comparison, 
+def yTestVB():
+    yWD= win32.dynamic.Dispatch("Word.Application")  # gencache.EnsureDispatch for wdConstant enumeration
+    yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
+
+
+    yNS = yOL.GetNamespace("MAPI")
+    yFolder = yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities']
+    yFolder1 =yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities'].Folders['History']
+
+    yDT=datetime.datetime(2022,7,5,0,50)
+    yDTStrg=yDT.strftime("%m/%d/%y  %H:%M%p" )
+    sFilter= f" [LSUpdate] > '{yDTStrg}' "
+    print(sFilter)
+    I2=yFolder.Items.Restrict(sFilter)
+    print (f" i count={I2.Count}")
+
 if __name__ == "__main__" :
-    yDF= genSummaryDF()
-    print (yDF)
+    #yTestVB()
+    
 

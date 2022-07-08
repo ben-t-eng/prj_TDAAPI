@@ -21,7 +21,7 @@ from logging import critical as lgc   #50
 ### import a_logging as alog
 # to customize the logging obj, all format propregate to root logging obj
 ### lg=alog.BTLogger( stdout_filter=alog.yfilter30, stream_filter=alog.yfilter10)
-### from a_logging import lg_line_break  as lglr 
+
 
 # %%
 # for a_logging.py code
@@ -30,8 +30,7 @@ from io import StringIO
 import datetime
 #from h11 import ERROR
 
-#lg linebreak for f'' string
-lg_line_break="\n"
+
 
 # %%
 # module code

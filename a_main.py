@@ -183,7 +183,7 @@ def mainEntry(only_Selected=0, testrun=1 ):
     # when adding new fields, need to add them manually at OL
     
     I2=yFolder1.Items.Restrict("[Update]='Updating' ") 
-    lgw(f' total sec to be updated {I2.Count}    ')
+    lgw(f' total sec in updating status {I2.Count}    ')
     yUpdateDT=datetime.datetime.now() # for filtering latest OLI
     for yOLI in I2:
         
@@ -287,7 +287,7 @@ def mainEntry(only_Selected=0, testrun=1 ):
                 a_OL_IF.SetOLIUsrPropDir(yOLI,'Update', ' ',1) 
                 yOLI.Save()
         except:
-            lge('failed to clear update field')
+            lge(f'failed to clear update field in \Sec {yOLI.UserProperties.Find("Sec").Value}')
         
 
     #clear oli with [update] field in \history
@@ -295,11 +295,13 @@ def mainEntry(only_Selected=0, testrun=1 ):
     # SW is confused if [update] is changed within the for loop 
     yStrg=yUpdateDT.strftime("%m/%d/%y  %H:%M%p" )
     I1=yFolder1.Items.Restrict(f"[LSUpdate] >= '{yStrg}' ") 
-    lgw(f' to clear update fields in  {I1.Count} \history OLIs; { yOLI.UserProperties.Find("LSUpdate").Value} > {yStrg}    ')
+    lgw(f' to clear update fields in  {I1.Count} ')  #nw! \history OLIs; { yOLI.UserProperties.Find("LSUpdate").Value} > {yStrg}    ')
     for yOLI in I1:
-        a_OL_IF.SetOLIUsrPropDir(yOLI,'Update', ' ',1) 
-        yOLI.Save()
-
+        try:
+            a_OL_IF.SetOLIUsrPropDir(yOLI,'Update', ' ',1) 
+            yOLI.Save()
+        except:
+            lge('Failed to clear update in \history')
     #lgw(f"Summary DF= {ySummaryDF}")
 
     #########################

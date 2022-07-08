@@ -77,7 +77,7 @@ class OLI_Stock :
             Value=self.OLI.UserProperties.Find(UsrPNm).Value
         except:
             Value=Default 
-            lgi('Failed to get Outlook user property ' + UsrPNm + ' value, set to ' + str(Default))
+            
             lge('Failed to get Outlook user property ' + UsrPNm + ' value, set to ' + str(Default))
         return Value
 
@@ -142,6 +142,7 @@ class OLI_Stock :
             #tz=self.OLI.Application.TimeZones.CurrentTimeZone
             #lgd('timezone Bias:', tz.Bias, '; daylight b:', tz.DaylightBias, '; std b ;', tz.StandardBiaz ) 
 
+            ###push this to later in OLI update function :
             self.SetOLIUsrProp( "LSUpdate", a_utils.DateTime2UTC4OLI(datetime.datetime.now()) , C.olDateTime)       #last success update date
             ###self.SetOLIUsrProp( "LSUDate", datetime.datetime.now() , C.olDateTime)
 
@@ -568,7 +569,7 @@ def updateSummaryOLI(yDF, yFolder):
 
             yDF1=yDF2.sort_values('Sort', ascending=False)
             yDF1.reset_index(drop=True, inplace=True)
-            a_utils.DF2CSV(yDF1, a_Settings.URL_debug_data_path, "SummaryDF")
+            #a_utils.DF2CSV(yDF1, a_Settings.URL_debug_data_path, "SummaryDF")
 
             lgw(f'summary DF shape { yDF1.shape}')
             for i in range(0, len(yDF1)):

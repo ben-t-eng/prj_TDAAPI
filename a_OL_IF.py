@@ -8,6 +8,8 @@
 ## imports
 from email.headerregistry import Address
 from attr import NOTHING
+import numpy as np
+import pandas as pd
 from numpy import empty
 from sqlalchemy import null
 import win32com.client as win32
@@ -19,12 +21,16 @@ from a_Stock_IF import Stock
 import a_utils
 import a_TDA_IF
 
-import logging
+import a_logging
 from logging import debug    as lgd   #10
 from logging import info     as lgi   #20
 from logging import warning  as lgw   #30
 from logging import error    as lge   #40
 from logging import critical as lgc   #50 
+### only for debug msg visibility: lg=a_logging.BTLogger( stdout_filter=a_logging.yfilter10, stream_filter=a_logging.yfilter40)
+
+# to customize the logging obj, all format propregate to root logging obj
+
 import a_Settings
 
 # yfilter=(a_utils.LevelFilter((logging.INFO, logging.CRITICAL, logging.DEBUG)) , a_utils.LevelFilter((logging.INFO, logging.CRITICAL, logging.DEBUG)))
@@ -438,7 +444,8 @@ class OLI_Stock :
         return (yRng, n) 
 
     #so that when the update OLI is copied back to /sec dir, it is not a valid event for next update
-    def OLICleanup(self):
+    #obsolete, since effdate is used for ComprsdBS date, not use for taskdate date 
+    def OLICleanup(self):  #not called
         try:
             yDT=datetime.date(2022,7,1)    #w!(2022,7,1,18)  #too old a date for pywin32: fromisoformat("1900-01-01")       #w  datetime.datetime.today()   #nw date(1900,1,1)
             lge(f"1. set date to {yDT}")
@@ -507,9 +514,7 @@ def OLICleanup1(yOLI):
 def updateSummaryOLI(yDF, yFolder):
     try:
         
-
-       
-    
+        lgd("started")
         yFolder.Items.Sort(Property="[LastModificationTime]", Descending= True ) 
         #only the first entry is use
 
@@ -569,15 +574,15 @@ def updateSummaryOLI(yDF, yFolder):
 
             yDF1=yDF2.sort_values('Sort', ascending=False)
             yDF1.reset_index(drop=True, inplace=True)
-            #a_utils.DF2CSV(yDF1, a_Settings.URL_debug_data_path, "SummaryDF")
+            #? a_utils.DF2CSV(yDF1, a_Settings.URL_debug_data_path, "SummaryDF")
 
             lgw(f'summary DF shape { yDF1.shape}')
             for i in range(0, len(yDF1)):
-                
-                lgd(f" cell [{i},1 ] is {yDF1['Symbol'].iloc[i]} ")
+                # since OIL table cell index starts from 1 , not 0
+                lgd(f" cell [{i+1},1 ] is {yDF1['Symbol'].iloc[i]} ")
                 ##########################################
                 #https://docs.microsoft.com/en-us/office/vba/api/word.cell
-                yRng=yWDTbl.Cell(i,2).Range
+                yRng=yWDTbl.Cell(i+1,2).Range
 
                 #lgw(f'yRng is a range 1')
                 #yRng.Collapse(Direction=C.wdCollapseStart)
@@ -595,7 +600,7 @@ def updateSummaryOLI(yDF, yFolder):
 
                                 
                 ########################################
-                yRng=yWDTbl.Cell(i,1).Range
+                yRng=yWDTbl.Cell(i+1,1).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
                 yFPth=yDF1['Link2Plot'].iloc[i]
 
@@ -605,12 +610,30 @@ def updateSummaryOLI(yDF, yFolder):
                 yPic.ScaleWidth=75
 
                 ########################################
-                yRng=yWDTbl.Cell(i,3).Range
+                yRng=yWDTbl.Cell(i+1,3).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
-                yString=f"Flags:{yDF1['Flag'].iloc[i]} ; cost: {yDF1['Cost'].iloc[i]} ; Shares: {yDF1['Shares'].iloc[i]} "    
+                yFlagTxt=f"{yDF1['Flag'].iloc[i]}"
+                lgw(f" yFlagTxt= {yFlagTxt}")
+                #?
+                if len(yFlagTxt)> 5 :
+                
+                    yRng.Text="Flag: "
+                    yRng.Font.Bold=True
+                    yRng.Font.ColorIndex=6 #C.wdRed 
+                else: 
+                    yRng.Text=" "
+                    
+                lgw(f" rng Txt= {yRng.Text}")   
 
-                yRng.Text=f"{yString}"
-
+                #http://www.java2s.com/Code/VBA-Excel-Access-Word/Word/EnteringTextinaCell.htm
+                yRng.Collapse(Direction=C.wdCollapseEnd)
+                yRng.InsertBreak(C.wdLineBreak) 
+                lgw(" red and bold font 4")
+                yString=f"{yFlagTxt}; cost: {yDF1['Cost'].iloc[i]} ; Shares: {yDF1['Shares'].iloc[i]} "  
+                
+                # yRng.Text=f"{yString}"
+                yRng.InsertAfter(f"{yString}")
+                lgw(" red and bol font 5")
 
             yInsp.Close(C.olSave)
 
@@ -651,6 +674,16 @@ def SetOLIUsrPropDir(yOLI, Fieldnm, Value, FieldType=1):
         return
 #########################################################################
 
+def SetupOLFolder():
+    yOL = win32.dynamic.Dispatch("Outlook.Application")  #w, needed for importing constants:
+    yNS = yOL.GetNamespace("MAPI")
+    ySecFolder = yNS.Folders['BXSelfCurrent'].Folders['BTHM'].Folders['0-outlook usage'].Folders['Test Run Outlook Usage'].Folders['Securities']
+    yHistFolder=        ySecFolder.Folders['History']
+    yDbgFolder=         ySecFolder.Folders['Debug']
+
+    return ySecFolder, yHistFolder, yDbgFolder
+
+
 # %%
 # testing module functiions
 # https://docs.python.org/3/library/datetime.html#date-objects
@@ -660,9 +693,28 @@ def ltest1():
     print( "utc now is ", dtobj1.strftime("%Y_%m_%d-%H_%M"), "CA now is ", datetime.datetime.now().strftime("%Y_%m_%d-%H_%M") )
     # utc now is  2022_05_09-02_47 CA now is  2022_05_08-19_47
 
+
+def test_WdCell():
+
+    yFolder, yFolder1, yFolder2=SetupOLFolder()
+
+    i1= yFolder2.Items.GetFirst()
+
+    lgd(f"Count {yFolder2.Items.Count}")
+
+    yDF=pd.read_csv(r"C:\BTFiles\btgithub1b\prj_TDAAPI\HistoricalData\Debug\SummaryDF_2022_07_08-23_29.csv")
+    
+    lgd(f"df shape {yDF.shape}")
+    
+    updateSummaryOLI(yDF, yFolder2 )
+
+
+# %%    
+
 if __name__ =='__main__':
     a=1
-    ltest1()
+    # ltest1()
+    test_WdCell()
    
 
 # %%

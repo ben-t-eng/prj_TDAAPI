@@ -34,10 +34,10 @@ from logging import critical as lgc
 #?from sqlalchemy import null   #50 #
 
 # step 2, select one of below line 
-import a_logging as alog
+import a_logging 
 
 # to customize the logging obj, all format propregate to root logging obj
-lg=alog.BTLogger( stdout_filter=alog.yfilter30, stream_filter=alog.yfilter40)
+lg=a_logging.BTLogger( stdout_filter=a_logging.yfilter30, stream_filter=a_logging.yfilter40)
 
 
 
@@ -116,7 +116,7 @@ def genSummaryDF():
 
 # %%
 # TDAAPI mainEntry function   from Outlook list of securities 
-def mainEntry(only_Selected=0, testrun=1 ):
+def mainEntry(only_Selected=0, testrun=1, Clear_Flag=0 ):
     ##only_Selected=0   # only OLI with [Selected] is true
     ##testrun=1          # only use saved data file in csv format, not need to connect to internew
     only_exclamation=0 # only those outlook exclamation marked items are updated
@@ -195,6 +195,7 @@ def mainEntry(only_Selected=0, testrun=1 ):
         #good
         print(yOLI.UserProperties.Find("SEC").Value +' in \history-------------------')
         
+        if Clear_Flag != 0:  yOLI.ClearTaskFlag()
         yO_S=a_OL_IF.OLI_Stock(yOLI,lg)
         yO_S.InitStock()
 
@@ -232,17 +233,28 @@ def mainEntry(only_Selected=0, testrun=1 ):
         #! disable the addins in outlook, outlookchangenotifier is especially suspicious
         yOLI.Save()
         #lgw("debug1")
+
+
         #so to save a new copy to /history/ folder
         # delete the previous one for compressedBD and event processing
          #delete the original updating OLI at \sec 
         yEID=yOLI.UserProperties.Find("EID").Value
         lgd(f" EID is {yEID} ")
-
         #delete the org in \sec 
         yOLI3=yNS.GetItemFromID(yEID, yFolder.StoreID)
         yOLI3.Delete()
 
+        #works with yOLI.EntryID, but not with yOLI2.EntryID, why???070422
+        yO_S.Stock.updateSummaryDF(ySummaryDF, yOLI)     
 
+
+        # can't not clear "update" field within thie for loop due to the filter by [update]
+        #lgw("debug4")
+        yOLI.Close(0)  #! save the outlook item, error means something wrong in writing to OLI 
+        # 7/3, 611f18d (HEAD -> main, origin/main) w/ RPC server issue, but summaryOLI is almost done
+        # is now functional without "RPC not available" issue 
+        # without specific change on window 10 !!!!!!!need to have outlook running 
+       
         #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.copy
         yOLI2=yOLI.Copy()
 
@@ -251,20 +263,11 @@ def mainEntry(only_Selected=0, testrun=1 ):
         yOLI2.Close(0) 
         yOLI2.Move(yFolder)
 
-        # can't not clear "update" field within thie for loop due to the filter by [update]
-        #lgw("debug4")
-        yOLI.Close(0)  #! save the outlook item, error means something wrong in writing to OLI 
-        # 7/3, 611f18d (HEAD -> main, origin/main) w/ RPC server issue, but summaryOLI is almost done
-        # is now functional without "RPC not available" issue 
-        # without specific change on window 10 !!!!!!!need to have outlook running 
-        
-        #works with yOLI.EntryID, but not with yOLI2.EntryID, why???070422
-        yO_S.Stock.updateSummaryDF(ySummaryDF, yOLI) 
 
     a_OL_IF.updateSummaryOLI(ySummaryDF,  yFolder) 
     
     #debug dataframe
-    #a_utils.DF2CSV(ySummaryDF, a_Settings.URL_debug_data_path, "SummaryDF")
+    #not the DF being sorted, use the one inside summaryOLI a_utils.DF2CSV(ySummaryDF, a_Settings.URL_debug_data_path, "SummaryDF")
     
     
     

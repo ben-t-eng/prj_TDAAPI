@@ -353,7 +353,7 @@ class Stock:
 
         #yOL=None
 
-    # deplecated , use set_CmprsdData()
+    # deprecated , use set_CmprsdData()
     def set_CmprsdData_original(self, FieldNm, Sec):   #w! with [due date]
     #this required outllook "due date"  aka taskduedate in VBA to be set     
     # fieldnm must be a userproperty in OLI and a numerical number ,e.g. > 0  
@@ -563,7 +563,12 @@ class Stock:
         yFlagTxt=self.genFlagTxt()
         yLink2OLI=yOLI.EntryID      # self.genLink2OLI()
         yLink2Plt= self.TA1['Strategies']['FinViz']['plt_loc'][-1]            # self.genLink2Plt()
-       
+
+        #? mark OLI with Mark mailitem as task
+        if len(yFlagTxt)> 5:
+            yOLI.MarkAsTask(0)  # OLMarkInterval:  0-today, 1- tomorrow 4- no date
+        yOLI.Save()
+        
         if yOLI.UserProperties.Find("LSUpdate") is None:
             yLSUpdate= a_utils.DateTime2UTC4OLI(datetime.datetime.now())
             lge(f"{self.Symbol} LSUpdate value is null")
@@ -600,7 +605,7 @@ class Stock:
     
         #iterate through buysell signal columns
         lgd('Stratgy = '+str(self.TA1)) 
-        yFlagText=''
+        yFlagText=' '
 
         ################################################
         # debugging
@@ -633,7 +638,7 @@ class Stock:
                         
                 except:
                     lge(f"failed at {yStrategy}")
-                    yFlagText=''
+                    yFlagText=' '
                 finally:
                     
                     continue

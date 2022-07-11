@@ -240,11 +240,14 @@ def mainEntry(only_Selected=0, testrun=1, Clear_Flag=0 ):
         #so to save a new copy to /history/ folder
         # delete the previous one for compressedBD and event processing
          #delete the original updating OLI at \sec 
-        yEID=yOLI.UserProperties.Find("EID").Value
-        lgd(f" EID is {yEID} ")
-        #delete the org in \sec 
-        yOLI3=yNS.GetItemFromID(yEID, yFolder.StoreID)
-        yOLI3.Delete()
+        try:
+            yEID=yOLI.UserProperties.Find("EID").Value
+            lgd(f" EID is {yEID} ")
+            #delete the org in \sec 
+            yOLI3=yNS.GetItemFromID(yEID, yFolder.StoreID)
+            yOLI3.Delete()
+        except:
+            lge(f"fail to get EID of {yOLI.UserProperties.Find('Sec').Value} ")
 
         #works with yOLI.EntryID, but not with yOLI2.EntryID, why???070422
         yO_S.Stock.updateSummaryDF(ySummaryDF, yOLI)     
@@ -327,9 +330,10 @@ def mainEntry(only_Selected=0, testrun=1, Clear_Flag=0 ):
 ######################################################
 # %%
 # running mainEntry ()
+# outlook needs to be running, or else there will be  PRC error 
 if __name__ == "__main__" :
     a=1
-    mainEntry(only_Selected=1, testrun=0) 
+    mainEntry(only_Selected=0, testrun=0) 
 
 
 ###################################################

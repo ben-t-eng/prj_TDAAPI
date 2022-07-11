@@ -106,7 +106,9 @@ def genSummaryDF():
           "Link2OLI":['lk2'],
           "Note":['notes'],
           "LSUpdate":[datetime.datetime.now()],
-          "Sort":[0]
+          "Sort":[0],
+          "Sector":[''],
+          "Stage":['']
         },
     index=[0]) 
     except:
@@ -298,7 +300,7 @@ def mainEntry(only_Selected=0, testrun=1, Clear_Flag=0 ):
     # SW is confused if [update] is changed within the for loop 
     yStrg=yUpdateDT.strftime("%m/%d/%y  %H:%M%p" )
     I1=yFolder1.Items.Restrict(f"[LSUpdate] >= '{yStrg}' ") 
-    lgw(f' to clear update fields in  {I1.Count} ')  #nw! \history OLIs; { yOLI.UserProperties.Find("LSUpdate").Value} > {yStrg}    ')
+    lgw(f' to clear update fields in \history OLIs, total {I1.Count} ')  #nw! \history OLIs; { yOLI.UserProperties.Find("LSUpdate").Value} > {yStrg}    ')
     for yOLI in I1:
         try:
             a_OL_IF.SetOLIUsrPropDir(yOLI,'Update', ' ',1) 
@@ -327,7 +329,7 @@ def mainEntry(only_Selected=0, testrun=1, Clear_Flag=0 ):
 # running mainEntry ()
 if __name__ == "__main__" :
     a=1
-    mainEntry(only_Selected=0, testrun=0) 
+    mainEntry(only_Selected=1, testrun=0) 
 
 
 ###################################################

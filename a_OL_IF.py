@@ -84,7 +84,8 @@ class OLI_Stock :
         except:
             Value=Default 
             
-            lge('Failed to get Outlook user property ' + UsrPNm + ' value, set to ' + str(Default))
+            #since you have the default value to cover, no an error
+            lgd('Failed to get Outlook user property ' + UsrPNm + ' value, set to ' + str(Default))
         return Value
 
 
@@ -561,28 +562,37 @@ def updateSummaryOLI(yDF, yFolder):
             yRng.Collapse(Direction=C.wdCollapseEnd)
 
             #insert table
-            yWDoc.Tables.Add(Range=yRng, NumRows=len(yDF), NumColumns=3,
+            yColumnCount=5
+            yWDoc.Tables.Add(Range=yRng, NumRows=len(yDF)+1, NumColumns=yColumnCount,
                                 DefaultTableBehavior=C.wdWord9TableBehavior, AutoFitBehavior=C.wdAutoFitFixed)
 
             yWDTbl=yWDoc.Tables(yWDoc.Tables.Count)
-            yWDTbl.Title = "Summary"
+            yWDTbl.Title = "Summary OLI"
             yWDTbl.ID = 123
 
-            lgw(f" yDF len : {len(yDF)};  ")
+            #this sets the table column header
+            j=1     # better to use in range(1, count)
+            while j <=yColumnCount:
+                yRng=yWDTbl.Cell(1,j).Range
+                yRng.Text=f"{j}"
+                j=j+1
+
+
+            lgd(f" yDF len : {len(yDF)};  ")
             #ignore the first row as the template setter 
             yDF2=yDF.loc[yDF.index >0 ]
 
             yDF1=yDF2.sort_values('Sort', ascending=False)
             yDF1.reset_index(drop=True, inplace=True)
-            #? a_utils.DF2CSV(yDF1, a_Settings.URL_debug_data_path, "SummaryDF")
+            a_utils.DF2CSV(yDF1, a_Settings.URL_debug_data_path, "SummaryDF")
 
             lgw(f'summary DF shape { yDF1.shape}')
             for i in range(0, len(yDF1)):
-                # since OIL table cell index starts from 1 , not 0
-                lgd(f" cell [{i+1},1 ] is {yDF1['Symbol'].iloc[i]} ")
+                # since OIL table cell index starts from 1 , not 0; but DF table index starts with 0
+                lgd(f" cell [{i+2},1 ] is {yDF1['Symbol'].iloc[i]} ")
                 ##########################################
                 #https://docs.microsoft.com/en-us/office/vba/api/word.cell
-                yRng=yWDTbl.Cell(i+1,2).Range
+                yRng=yWDTbl.Cell(i+2,2).Range
 
                 #lgw(f'yRng is a range 1')
                 #yRng.Collapse(Direction=C.wdCollapseStart)
@@ -600,7 +610,7 @@ def updateSummaryOLI(yDF, yFolder):
 
                                 
                 ########################################
-                yRng=yWDTbl.Cell(i+1,1).Range
+                yRng=yWDTbl.Cell(i+2,1).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
                 yFPth=yDF1['Link2Plot'].iloc[i]
 
@@ -610,10 +620,10 @@ def updateSummaryOLI(yDF, yFolder):
                 yPic.ScaleWidth=75
 
                 ########################################
-                yRng=yWDTbl.Cell(i+1,3).Range
+                yRng=yWDTbl.Cell(i+2,3).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
                 yFlagTxt=f"{yDF1['Flag'].iloc[i]}"
-                lgw(f" yFlagTxt= {yFlagTxt}")
+                lgd(f" yFlagTxt= {yFlagTxt}")
                 #?
                 if len(yFlagTxt)> 5 :
                 
@@ -623,17 +633,27 @@ def updateSummaryOLI(yDF, yFolder):
                 else: 
                     yRng.Text=" "
                     
-                lgw(f" rng Txt= {yRng.Text}")   
+                lgd(f" rng Txt= {yRng.Text}")   
 
                 #http://www.java2s.com/Code/VBA-Excel-Access-Word/Word/EnteringTextinaCell.htm
                 yRng.Collapse(Direction=C.wdCollapseEnd)
                 yRng.InsertBreak(C.wdLineBreak) 
-                lgw(" red and bold font 4")
+                lgd(" red and bold font 4")
                 yString=f"{yFlagTxt}; cost: {yDF1['Cost'].iloc[i]} ; Shares: {yDF1['Shares'].iloc[i]} "  
                 
                 # yRng.Text=f"{yString}"
                 yRng.InsertAfter(f"{yString}")
-                lgw(" red and bol font 5")
+                lgd(" red and bol font 5")
+
+                ################################################
+                yRng=yWDTbl.Cell(i+2,4).Range
+                yRng.Collapse(Direction=C.wdCollapseStart)
+                yRng.Text=f"{yDF1['Sector'].iloc[i]}"
+
+                ################################################
+                yRng=yWDTbl.Cell(i+2,5).Range
+                yRng.Collapse(Direction=C.wdCollapseStart)
+                yRng.Text=f"{yDF1['Stage'].iloc[i]}"
 
             yInsp.Close(C.olSave)
 

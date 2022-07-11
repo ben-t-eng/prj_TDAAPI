@@ -141,7 +141,7 @@ class Stock:
 
             return 1
         except:
-            lge ("failed, check SEC symbol in captital or internet connection")
+            lge (f"failed, check {self.Symbol} or internet connection")
             return 0
 
 
@@ -570,13 +570,18 @@ class Stock:
         yOLI.Save()
         
         if yOLI.UserProperties.Find("LSUpdate") is None:
-            yLSUpdate= a_utils.DateTime2UTC4OLI(datetime.datetime.now())
+            yLSUpdate= a_utils.DateTime2UTC4OLI(datetime.datetime.now()) # LSUpdate in summaryDF is NOT used for comparing agaisnt update time
             lge(f"{self.Symbol} LSUpdate value is null")
         else: 
             #yLSUpdate is set as GMT time, but its value is local time
             yLSUpdate=yOLI.UserProperties.Find("LSUpdate").Value  #pywintypes.datetime can't not be assigned to np.dt 
 
-        yPriceD=self.HistDF.index.to_numpy()[-1]
+        ySector=yOLI.UserProperties.Find("Sector").Value if yOLI.UserProperties.Find("Sector") is not None else "TBD"
+        yStage=yOLI.UserProperties.Find("Stage").Value if yOLI.UserProperties.Find("Stage") is not None else "TBD"
+
+        ### not used: yPriceD=self.HistDF.index.to_numpy()[-1]
+
+
 
         # datetime to stamp and to datetime takes input as gmt and convert it to local time
         yLSUpdate1=yLSUpdate.astimezone() - xL2UTC   # assign it with local time zone but also correct the offset reading from from OLI 
@@ -590,7 +595,7 @@ class Stock:
 
         yDF.loc[len(yDF.index)]=[datetime.datetime.now(),self.HistDF['symbol'].to_numpy()[-1], self.HistDF['close'].iloc[-1], 
         self.HistDF['volume'].to_numpy()[-1], self.HistDF.index.to_numpy()[-1] ,self.HistDF['Cost'].iloc[-1], 
-        self.HistDF['Shares'].iloc[-1], yFlagTxt, yLink2Plt, yLink2OLI, 'note', yLSUpdate2, len(yFlagTxt) ]  
+        self.HistDF['Shares'].iloc[-1], yFlagTxt, yLink2Plt, yLink2OLI, 'note', yLSUpdate2, len(yFlagTxt), ySector, yStage ]  
 
         lgd(f"DF size = {xLB} {self.HistDF.shape},{xLB} value = {xLB} {self.HistDF.iloc[-1].to_numpy()} ")
         lgd(f"added row symbol is {self.HistDF['symbol'].to_numpy()[-1]}, {self.HistDF['close'].iloc[-1]}")
@@ -611,7 +616,7 @@ class Stock:
         # debugging
         #works but w/ Py warning: self.HistDF['SMA_Buy'][-1]=1122
         #works self.HistDF['SMA_Buy'].to_numpy()[-1]=1122
-        if self.HistDF['symbol'].iloc[-1] =='QQQ' :  self.HistDF['SMA_Sell'].iloc[-1]=1122
+        ### if self.HistDF['symbol'].iloc[-1] =='QQQ' :  self.HistDF['SMA_Sell'].iloc[-1]=1122
         ################################################
 
         #lgw(f"histDF row: {self.HistDF.tail(1)}")

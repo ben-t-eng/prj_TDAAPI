@@ -133,7 +133,36 @@ class TA1:
 
         self.get_CompressedBS()
 
-   
+        self.get_ChgPert()
+
+
+    def get_ChgPert(self):
+        try:
+            yDF=self.TAs
+            lgd(f"yDF= {yDF.shape}  ")
+
+            yNPA1=yDF['close'].to_numpy()
+            yNPA2=np.insert(yNPA1,0, 0)
+            yNPA3=np.delete(yNPA2, yNPA2.size-1   )
+            yNPA4=(yNPA1-yNPA3)/yNPA1
+            yDF['PriceChg']=yNPA4
+
+            lgd(f"pricechange npa.size= {yNPA4.size}  ")
+            yNPA1=yDF['volume'].to_numpy()
+            yNPA2=np.insert(yNPA1,0, 0)
+            yNPA3=np.delete(yNPA2, yNPA2.size-1   )
+            yNPA4=(yNPA1-yNPA3)/yNPA1
+            yDF['VolChg']=yNPA4
+
+            lgd(f"vol NPA4 = {yNPA4.size}  ")
+
+        except:
+            lge("failed")    
+                     
+
+
+
+
 
     def get_sma(self):
         close_prices = self.prices

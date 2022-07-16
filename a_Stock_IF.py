@@ -2,6 +2,7 @@
 ## imports
 ##############
 # %%
+from cmath import nan
 from msilib.schema import Property
 from pickle import FALSE, TRUE
 from re import M
@@ -76,6 +77,14 @@ class Stock:
         self.Volume=0
         self.HistEndDate=0 # Epoc second
         self.PriceDate=None  # datetime obj
+
+        self.YrHi=0
+        self.YrLo=0
+        self.YrAvg=0
+                
+        self.YrVolHi=0
+        self.YrVolLo=0
+        self.YrVolAvg=0 
 
         self.Comment='' # for collecting all changes, warnings
 
@@ -563,6 +572,7 @@ class Stock:
         yFlagTxt=self.genFlagTxt()
         yLink2OLI=yOLI.EntryID      # self.genLink2OLI()
         yLink2Plt= self.TA1['Strategies']['FinViz']['plt_loc'][-1]            # self.genLink2Plt()
+        yStreak=self.calStreak()    
 
         #? mark OLI with Mark mailitem as task
         if len(yFlagTxt)> 5:
@@ -595,7 +605,8 @@ class Stock:
 
         yDF.loc[len(yDF.index)]=[datetime.datetime.now(),self.HistDF['symbol'].to_numpy()[-1], self.HistDF['close'].iloc[-1], 
         self.HistDF['volume'].to_numpy()[-1], self.HistDF.index.to_numpy()[-1] ,self.HistDF['Cost'].iloc[-1], 
-        self.HistDF['Shares'].iloc[-1], yFlagTxt, yLink2Plt, yLink2OLI, 'note', yLSUpdate2, len(yFlagTxt), ySector, yStage ]  
+        self.HistDF['Shares'].iloc[-1], yFlagTxt, yLink2Plt, yLink2OLI, 'note', yLSUpdate2, len(yFlagTxt), ySector, yStage,
+        self.HistDF['PriceChg'].iloc[-1], self.HistDF['VolChg'].iloc[-1], yStreak ]  
 
         lgd(f"DF size = {xLB} {self.HistDF.shape},{xLB} value = {xLB} {self.HistDF.iloc[-1].to_numpy()} ")
         lgd(f"added row symbol is {self.HistDF['symbol'].to_numpy()[-1]}, {self.HistDF['close'].iloc[-1]}")
@@ -655,6 +666,32 @@ class Stock:
         finally:
             return yFlagText
 
+    def calStreak(self):
+    #yStreak is number consecutive up or down days, e.g. +5 days, -3days
+    # get the last 20 records , start from the latest, compare same sign until it switches
+        try:    
+
+            yDF1=self.HistDF.tail(20)        
+            #lgw(f" yDF1 shape= {yDF1.shape }")
+
+            yNBA1=yDF1['PriceChg'].to_numpy()
+            yPChg=yNBA1[yNBA1.size-1]
+            a=1
+
+            #lgw(f" NB size= {yNBA1.size}")
+
+            for i in range(yNBA1.size-2,-1,-1):
+                if yPChg* yNBA1[i] > 0:
+                    a=a+1 
+                else:
+                    break
+
+        except: 
+
+            lge("failed")
+        
+            
+        return a
 
 
 
@@ -662,13 +699,14 @@ class Stock:
 # %%
 def test1():
     df1= pd.DataFrame(
-        {"a" : [4 ,5, 6], 
+        {"a" : [4.1 ,5.2, 6.1], 
         "b" : [7, 8, 9], 
         "c" : [10, 11, 12]},    
         index = [1, 2, 'z'])
-    print (df1)
+    print (f"df1={df1}")
    
-    np1=df1['c'].to_numpy()
+    #np1=df1['c'].to_numpy()
+    
     #w! z1=np1[-1]
     #w! z1=df1['c'].to_numpy()[-1]
     #w1 z1=df1['c'].tail(1).to_numpy()[-1]
@@ -679,15 +717,37 @@ def test1():
     #w z1=df1['b'].tail(1).to_numpy()[-1]     # allow: -1, : , 1:2; 1:'z';  nw: 0:2;  
     #w! df1['b'].to_numpy()[-1]=704
     #w! df1['b'].iloc[-1]=705
-    df1.loc[[2,1],'b']=700
-    #nW! z1=df1.index.iloc[-1]
-   
+    # df1.loc[[2,1],'b']=700
+    z1=df1['b'].to_numpy()
+    print(f"z1={z1}")
+    z2=np.insert(z1,0, 123)
+    print(f"z2={z2}")
+
+    z3=np.delete(z2,z2.size-1)
+    print(f"z3={z3}")
+
+    df1['newcol']=z3
+    print (f"df1={df1}")
     #      a  b   c
     #   1  4  7  10
     #   2  5  8  11
     #   z  6  9  12
 
-    ### z1=df123.iloc[-1, -1]=12  # iloc allows -1 both dims use E/C's index; loc does not , both dim use row column name
+    b1=df1['b'].to_numpy()
+    a1=df1['a'].to_numpy()
+    m=(a1-b1 )/a1
+    print (f"m={m}")
+
+    df1['c'].to_numpy()[:1]=2
+    #df1.at[1, 'b']=21
+    df2=df1.loc[ df1['b'] >7 ]
+    print(df2)
+
+    df2['c'].to_numpy()[0]=111
+    print (f'df2={df2}, df1={df1}')
+
+    #print (df1.columns.get_loc ("b") )
+    ## z1=df123.iloc[-1, -1]=12  # iloc allows -1 both dims use E/C's index; loc does not , both dim use row column name
 
     ### z1=df123['b'][2] =8   # df[clm nm][row nm] == df.loc [row nm, clm nm ]; df.iloc[ridx, cidx]
 
@@ -695,11 +755,16 @@ def test1():
     #df1.loc[len(df1.index)]=[11,22,33]
     #df1.loc[2]=[111,222,333]
 
-    print(f" df type= {type(z1)}, {xLB} z1: { z1}, {xLB} df1: {df1}  ")    
+    #print(f" df type= {type(z1)}, {xLB} z1: { z1}, {xLB} df1: {df1}  ")    
+def test2():
+    for i in range(10,1,-1):
+        print (i)
+
 
 # %% running tests
 if __name__ == '__main__':
-    test1()
+    #test1()
+    test2()
 
 
 

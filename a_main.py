@@ -108,7 +108,10 @@ def genSummaryDF():
           "LSUpdate":[datetime.datetime.now()],
           "Sort":[0],
           "Sector":[''],
-          "Stage":['']
+          "Stage":[''],
+          "PriceChg":[0],       #%  over prvious price
+          "VolChg":[0],         #%  over preious volumn
+          "Streak":[0]           #consective up +, or down - days
         },
     index=[0]) 
     except:
@@ -216,6 +219,7 @@ def mainEntry(only_Selected=0, testrun=1, Clear_Flag=0 ):
         yPlt=a_TA1_Plt.TA1_Plt()    
 
         yO_S.Stock.SaveHist()
+
         yPlt.plt_all(yTA3)
 
     
@@ -333,7 +337,7 @@ def mainEntry(only_Selected=0, testrun=1, Clear_Flag=0 ):
 # outlook needs to be running, or else there will be  PRC error 
 if __name__ == "__main__" :
     a=1
-    mainEntry(only_Selected=0, testrun=0) 
+    mainEntry(only_Selected=1, testrun=0) 
 
 
 ###################################################
@@ -362,5 +366,4 @@ def yTestVB():
 
 if __name__ == "__main__" :
     #yTestVB()
-    
-
+    a=1

@@ -562,7 +562,7 @@ def updateSummaryOLI(yDF, yFolder):
             yRng.Collapse(Direction=C.wdCollapseEnd)
 
             #insert table
-            yColumnCount=7
+            yColumnCount=8
             yWDoc.Tables.Add(Range=yRng, NumRows=len(yDF)+1, NumColumns=yColumnCount,
                                 DefaultTableBehavior=C.wdWord9TableBehavior, AutoFitBehavior=C.wdAutoFitFixed)
 
@@ -584,7 +584,7 @@ def updateSummaryOLI(yDF, yFolder):
 
             yDF1=yDF2.sort_values('Sort', ascending=False)
             yDF1.reset_index(drop=True, inplace=True)
-            a_utils.DF2CSV(yDF1, a_Settings.URL_debug_data_path, "SummaryDF")
+            a_utils.DF2CSV(yDF1, a_Settings.URL_summary_data_path, "SummaryDF")
 
             #lgw(f'summary DF shape { yDF1.shape}')
             for i in range(0, len(yDF1)):
@@ -601,7 +601,7 @@ def updateSummaryOLI(yDF, yFolder):
                 #lgw(f'yRng is a range 2')
                 yHL=yWDoc.Hyperlinks.Add(Anchor=yRng, Address=f"Outlook:{yDF1['Link2OLI'].iloc[i]}", TextToDisplay=f"{yDF1['Symbol'].iloc[i] } ")
 
-                yString=f"LSUpdate:{yDF1['LSUpdate'].iloc[i]:%m/%d }   ;Price Date:{yDF1['PriceDate'].iloc[i]:%m/%d %H} ; Close: {yDF1['Close'].iloc[i]} ; Volume: {yDF1['Volume'].iloc[i]} "    
+                yString=f"LSUpdate:{yDF1['LSUpdate'].iloc[i]:%m/%d }   ;Price Date:{yDF1['PriceDate'].iloc[i]:%m/%d:%H} ; Close: {yDF1['Close'].iloc[i]} ; Volume: {yDF1['Volume'].iloc[i]} "    
 
                 yRng=yHL.Range
                 yRng.Collapse(Direction=C.wdCollapseEnd)
@@ -656,24 +656,29 @@ def updateSummaryOLI(yDF, yFolder):
                 yRng.Text=f"{yPChg:+.1%}"
 
                 if yPChg < 0:     
-                    yRng.Font.Bold=True
+                    
                     yRng.Font.ColorIndex=6 #C.wdRed 
                 else: 
-                    yRng.Font.Bold=True
+                    
                     yRng.Font.ColorIndex=11 #C.wdGreen
+
+                if abs(yPChg) > yDF1['PPkAvg'].iloc[i]*0.9:     
+                    yRng.Font.Bold=True
+                   
+
 
                 yRng.Collapse(Direction=C.wdCollapseEnd)
                 yRng.InsertBreak(C.wdLineBreak) 
 
                 #yPChg= f"\033[1m{yDF1['PriceChg'].iloc[i]:+.1%}\033[0m" if yDF1['PriceChg'].iloc[i] > 0.02 
-                yRng.InsertAfter(f"Vol: {yDF1['VolChg'].iloc[i]:+.1%}")
+                yRng.InsertAfter(f"AvgPkPrcChg: {yDF1['PPkAvg'].iloc[i]:+.1%}")
 
                 ################################################
                 yRng=yWDTbl.Cell(i+2,5).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
                 yRng.Text=f"Streak: {yDF1['Streak'].iloc[i]}"
 
-                if yPChg > 3:     
+                if yDF1['Streak'].iloc[i] > 3:     
                     yRng.Font.Bold=True
                     yRng.Font.ColorIndex=6 #C.wdRed ; https://docs.microsoft.com/en-us/office/vba/api/word.wdcolorindex
                 else: 
@@ -683,10 +688,31 @@ def updateSummaryOLI(yDF, yFolder):
                 ################################################
                 yRng=yWDTbl.Cell(i+2,6).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
-                yRng.Text=f"{yDF1['Sector'].iloc[i]}"
+                yRng.Text=f"VolChg: {yDF1['VolChg'].iloc[i]:+.1%}"
+
+                if abs(yDF1['VolChg'].iloc[i]) > yDF1['VPkAvg'].iloc[i]*0.9:     
+                    yRng.Font.Bold=True
+                   
+
+                if yDF1['VolChg'].iloc[i] <0:
+                    yRng.Font.ColorIndex=6 #C.wdRed ; https://docs.microsoft.com/en-us/office/vba/api/word.wdcolorindex
+                else: 
+                    
+                    yRng.Font.ColorIndex=11    #11 #C.wdGreen
+
+                yRng.Collapse(Direction=C.wdCollapseEnd)
+                yRng.InsertBreak(C.wdLineBreak) 
+
+               
+                yRng.InsertAfter(f"AvgPkVolChg: {yDF1['VPkAvg'].iloc[i]:+.1%}")
 
                 ################################################
                 yRng=yWDTbl.Cell(i+2,7).Range
+                yRng.Collapse(Direction=C.wdCollapseStart)
+                yRng.Text=f"{yDF1['Sector'].iloc[i]}"
+
+                ################################################
+                yRng=yWDTbl.Cell(i+2,8).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
                 yRng.Text=f"{yDF1['Stage'].iloc[i]}"
 

@@ -110,7 +110,9 @@ def genSummaryDF():
           "Sector":[''],
           "Stage":[''],
           "PriceChg":[0],       #%  over prvious price
+          "PPkAvg":[0],         # avg of P pk and N pk
           "VolChg":[0],         #%  over preious volumn
+          "VPkAvg":[0],        
           "Streak":[0]           #consective up +, or down - days
         },
     index=[0]) 

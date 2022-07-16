@@ -147,6 +147,9 @@ class TA1:
             yNPA4=(yNPA1-yNPA3)/yNPA1
             yDF['PriceChg']=yNPA4
 
+            yNPA5=np.delete(yNPA4,0) # first row value artifial
+            yDF['PPkAvg']=(np.amax(yNPA5)-np.amin(yNPA5))/2 
+
             lgd(f"pricechange npa.size= {yNPA4.size}  ")
             yNPA1=yDF['volume'].to_numpy()
             yNPA2=np.insert(yNPA1,0, 0)
@@ -154,6 +157,8 @@ class TA1:
             yNPA4=(yNPA1-yNPA3)/yNPA1
             yDF['VolChg']=yNPA4
 
+            yNPA5=np.delete(yNPA4,0) # first row value artifial
+            yDF['VPkAvg']=(np.amax(yNPA5)-np.amin(yNPA5))/2 
             lgd(f"vol NPA4 = {yNPA4.size}  ")
 
         except:

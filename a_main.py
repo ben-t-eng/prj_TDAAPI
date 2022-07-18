@@ -90,7 +90,7 @@ import a_FinViz
 # %%
 # sumnmary DF
 
-
+# for collecting key info from each sec and display on summaryOLI
 def genSummaryDF():
     try:
         yDF=pd.DataFrame(
@@ -109,11 +109,14 @@ def genSummaryDF():
           "Sort":[0],
           "Sector":[''],
           "Stage":[''],
-          "PriceChg":[0],       #%  over prvious price
-          "PPkAvg":[0],         # avg of P pk and N pk
-          "VolChg":[0],         #%  over preious volumn
-          "VPkAvg":[0],        
-          "Streak":[0]           #consective up +, or down - days
+          "PriceChg":[0],         #%  over prvious price
+          "PChgAlm":[0],          # as set in TA1_Plt.py get_ChgPert(self)
+          "Streak":[0],           # price consective up +, or down - days
+          "VolChg":[0], 
+          "VChgAlm":[0],
+          "VLvlAlmH":[0],         # 2 sigma over mean
+          "VLvlAlmL":[0],        
+          
         },
     index=[0]) 
     except:
@@ -339,7 +342,7 @@ def mainEntry(only_Selected=0, testrun=1, Clear_Flag=0 ):
 # outlook needs to be running, or else there will be  PRC error 
 if __name__ == "__main__" :
     a=1
-    mainEntry(only_Selected=1, testrun=0) 
+    mainEntry(only_Selected=0, testrun=0) 
 
 
 ###################################################

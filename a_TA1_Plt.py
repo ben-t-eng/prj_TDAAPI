@@ -135,7 +135,7 @@ class TA1:
 
         self.get_ChgPert()
 
-
+    # updating the histDF in stock obj
     def get_ChgPert(self):
         try:
             yDF=self.TAs
@@ -148,18 +148,29 @@ class TA1:
             yDF['PriceChg']=yNPA4
 
             yNPA5=np.delete(yNPA4,0) # first row value artifial
-            yDF['PPkAvg']=(np.amax(yNPA5)-np.amin(yNPA5))/2 
+            #yNPA6=(np.amax(yNPA5)-np.amin(yNPA5))/2
+           
+            # price change mean is assumed to be at 0%
+            yDF['PChgAlm']=np.std(yNPA5)*2
+            
+            lgd(f"price std= {np.std(yNPA5)}  ")
 
-            lgd(f"pricechange npa.size= {yNPA4.size}  ")
+
+
             yNPA1=yDF['volume'].to_numpy()
+            #shift one row donw by adding  at index 0 and delete at index yNPA2.size-1
             yNPA2=np.insert(yNPA1,0, 0)
             yNPA3=np.delete(yNPA2, yNPA2.size-1   )
             yNPA4=(yNPA1-yNPA3)/yNPA1
             yDF['VolChg']=yNPA4
-
             yNPA5=np.delete(yNPA4,0) # first row value artifial
-            yDF['VPkAvg']=(np.amax(yNPA5)-np.amin(yNPA5))/2 
-            lgd(f"vol NPA4 = {yNPA4.size}  ")
+            yDF['VChgAlm']=np.std(yNPA5)*2
+
+            yDF['VolSTD']=np.std(yNPA1)
+            yDF['VolMean']=np.mean(yNPA1)
+            yDF['VLvlAlmH']=np.mean(yNPA1)+2*np.std(yNPA1)
+            yDF['VLvlAlmL']=np.mean(yNPA1)-2*np.std(yNPA1)
+            lgd(f"vol std= {np.std(yNPA1)}  ")
 
         except:
             lge("failed")    

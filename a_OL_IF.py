@@ -601,14 +601,30 @@ def updateSummaryOLI(yDF, yFolder):
                 #lgw(f'yRng is a range 2')
                 yHL=yWDoc.Hyperlinks.Add(Anchor=yRng, Address=f"Outlook:{yDF1['Link2OLI'].iloc[i]}", TextToDisplay=f"{yDF1['Symbol'].iloc[i] } ")
 
-                yString=f"LSUpdate:{yDF1['LSUpdate'].iloc[i]:%m/%d }   ;Price Date:{yDF1['PriceDate'].iloc[i]:%m/%d:%H} ; Close: {yDF1['Close'].iloc[i]} ; Volume: {yDF1['Volume'].iloc[i]} "    
+                yVol=yDF1['Volume'].iloc[i]
+                yString=f"Close: {yDF1['Close'].iloc[i]}; @{yDF1['PriceDate'].iloc[i]:%m/%d:%H}; Volume: {yVol:.2E}, LSUpdate:{yDF1['LSUpdate'].iloc[i]:%m/%d }  "    
 
                 yRng=yHL.Range
                 yRng.Collapse(Direction=C.wdCollapseEnd)
                 yRng.InsertBreak(C.wdLineBreak)  # https://docs.microsoft.com/en-us/office/vba/api/word.wdbreaktype
                 yRng.InsertAfter(f"{yString}")
 
-                                
+                yVolAlert=''
+                if yVol >  yDF1['VLvlAlmH'].iloc[i]: 
+                    yVolAlert=f"High volume alert: {yVol/yDF1['VLvlAlmH'].iloc[i]} " 
+                if yVol < yDF1['VLvlAlmL'].iloc[i]:
+                    yVolAlert=f"Low volume alert: {yVol/yDF1['VLvlAlmL'].iloc[i]} " 
+
+                if len(yVolAlert)>2:                 
+                    yRng.Font.ColorIndex=6 #C.wdRed 
+                else:
+                    ySTD=(yDF1['VLvlAlmH'].iloc[i]-yDF1['VLvlAlmL'].iloc[i] )/2
+                    yVolAlert=f'Vol STD: {ySTD:.2E}'
+
+                yRng.Collapse(Direction=C.wdCollapseEnd)
+                yRng.InsertBreak(C.wdLineBreak)  
+                yRng.InsertAfter(f"{yVolAlert}")   
+
                 ########################################
                 yRng=yWDTbl.Cell(i+2,1).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
@@ -625,7 +641,7 @@ def updateSummaryOLI(yDF, yFolder):
                 ########################################
                 yRng=yWDTbl.Cell(i+2,3).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
-                yFlagTxt=f"{yDF1['Flag'].iloc[i]}"
+                yFlagTxt=f"{yDF1['Flag'].iloc[i]}; "
                 lgd(f" yFlagTxt= {yFlagTxt}")
                 #?
                 if len(yFlagTxt)> 5 :
@@ -642,11 +658,11 @@ def updateSummaryOLI(yDF, yFolder):
                 yRng.Collapse(Direction=C.wdCollapseEnd)
                 yRng.InsertBreak(C.wdLineBreak) 
                 lgd(" red and bold font 4")
-                yString=f"{yFlagTxt}; cost: {yDF1['Cost'].iloc[i]} ; Shares: {yDF1['Shares'].iloc[i]} "  
+                yString=f"{yFlagTxt}Cost: {yDF1['Cost'].iloc[i]} ; Shares: {yDF1['Shares'].iloc[i]} "  
                 
                 # yRng.Text=f"{yString}"
                 yRng.InsertAfter(f"{yString}")
-                lgd(" red and bol font 5")
+                lgd(" col 4")
 
                 ################################################
                 yRng=yWDTbl.Cell(i+2,4).Range
@@ -662,8 +678,9 @@ def updateSummaryOLI(yDF, yFolder):
                     
                     yRng.Font.ColorIndex=11 #C.wdGreen
 
-                if abs(yPChg) > yDF1['PPkAvg'].iloc[i]*0.9:     
+                if abs(yPChg) > yDF1['PChgAlm'].iloc[i]:     
                     yRng.Font.Bold=True
+                    yRng.Font.UnderLine=1  # nw?  6 = thick; https://docs.microsoft.com/en-us/office/vba/api/word.wdunderline
                    
 
 
@@ -671,9 +688,10 @@ def updateSummaryOLI(yDF, yFolder):
                 yRng.InsertBreak(C.wdLineBreak) 
 
                 #yPChg= f"\033[1m{yDF1['PriceChg'].iloc[i]:+.1%}\033[0m" if yDF1['PriceChg'].iloc[i] > 0.02 
-                yRng.InsertAfter(f"AvgPkPrcChg: {yDF1['PPkAvg'].iloc[i]:+.1%}")
+                yRng.InsertAfter(f"PrcChgAlmLevel: {yDF1['PChgAlm'].iloc[i]:.1%}")
 
                 ################################################
+                lgd(" col 5")
                 yRng=yWDTbl.Cell(i+2,5).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
                 yRng.Text=f"Streak: {yDF1['Streak'].iloc[i]}"
@@ -681,17 +699,20 @@ def updateSummaryOLI(yDF, yFolder):
                 if yDF1['Streak'].iloc[i] > 3:     
                     yRng.Font.Bold=True
                     yRng.Font.ColorIndex=6 #C.wdRed ; https://docs.microsoft.com/en-us/office/vba/api/word.wdcolorindex
+                    yRng.Font.UnderLine=6 #thick
                 else: 
                     yRng.Font.Bold=False
                     yRng.Font.ColorIndex=1 # black   #11 #C.wdGreen
 
                 ################################################
+                lgd("col 6")
                 yRng=yWDTbl.Cell(i+2,6).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
-                yRng.Text=f"VolChg: {yDF1['VolChg'].iloc[i]:+.1%}"
+                yRng.Text=f"{yDF1['VolChg'].iloc[i]:.1%}, Volchg; "
 
-                if abs(yDF1['VolChg'].iloc[i]) > yDF1['VPkAvg'].iloc[i]*0.9:     
+                if abs(yDF1['VolChg'].iloc[i]) > yDF1['VChgAlm'].iloc[i]:     
                     yRng.Font.Bold=True
+                    yRng.Font.UnderLine=6 #thick
                    
 
                 if yDF1['VolChg'].iloc[i] <0:
@@ -704,9 +725,10 @@ def updateSummaryOLI(yDF, yFolder):
                 yRng.InsertBreak(C.wdLineBreak) 
 
                
-                yRng.InsertAfter(f"AvgPkVolChg: {yDF1['VPkAvg'].iloc[i]:+.1%}")
+                yRng.InsertAfter(f"VolchgAlmLevel: {yDF1['VChgAlm'].iloc[i]:.1%}")
 
                 ################################################
+                lgd(" col 7")
                 yRng=yWDTbl.Cell(i+2,7).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
                 yRng.Text=f"{yDF1['Sector'].iloc[i]}"

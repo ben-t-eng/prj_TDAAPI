@@ -567,6 +567,7 @@ class Stock:
 
         return df
 
+    #update SummaryDF as yDF 
     def updateSummaryDF(self, yDF, yOLI):
           
         yFlagTxt=self.genFlagTxt()
@@ -606,7 +607,7 @@ class Stock:
         yDF.loc[len(yDF.index)]=[datetime.datetime.now(),self.HistDF['symbol'].to_numpy()[-1], self.HistDF['close'].iloc[-1], 
         self.HistDF['volume'].to_numpy()[-1], self.HistDF.index.to_numpy()[-1] ,self.HistDF['Cost'].iloc[-1], 
         self.HistDF['Shares'].iloc[-1], yFlagTxt, yLink2Plt, yLink2OLI, 'note', yLSUpdate2, len(yFlagTxt), ySector, yStage,
-        self.HistDF['PriceChg'].iloc[-1], self.HistDF['PPkAvg'].iloc[-1],self.HistDF['VolChg'].iloc[-1], self.HistDF['VPkAvg'].iloc[-1], yStreak ]  
+        self.HistDF['PriceChg'].iloc[-1], self.HistDF['PChgAlm'].iloc[-1],yStreak, self.HistDF['VolChg'].iloc[-1], self.HistDF['VChgAlm'].iloc[-1],self.HistDF['VLvlAlmH'].iloc[-1], self.HistDF['VLvlAlmL'].iloc[-1]  ]  
 
         lgd(f"DF size = {xLB} {self.HistDF.shape},{xLB} value = {xLB} {self.HistDF.iloc[-1].to_numpy()} ")
         lgd(f"added row symbol is {self.HistDF['symbol'].to_numpy()[-1]}, {self.HistDF['close'].iloc[-1]}")

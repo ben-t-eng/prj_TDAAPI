@@ -36,7 +36,7 @@ import a_Stock_IF
 # "C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\Automating Stock Investing Technical Analysis With Python _ by Farhad Malik _ FinTechExplained _ Medium_btc.pdf"
 # for TA in python https://technical-analysis-library-in-python.readthedocs.io/en/latest/
 
-
+#technical analysis 1 =TA1
 class TA1:
     def __init__(self, container):
         
@@ -541,6 +541,37 @@ class TA1_Plt:
             plt.close(fig)
             # plt.show()
 
+    def plot_DailyPrice(self, yTA1):
+            
+            
+            # Create and plot the graph
+            fig, ax= plt.subplots( figsize=(4,3))
+            
+           #last 26 x 15min = 6 hours 30 min =9:30 am to 4 pm
+            yDailyDF=yTA1.container.DailyDF.tail(26)
+            yStart=yDailyDF["close"].to_numpy()[0]
+            yDailyDF['Start']=yStart
+
+           
+            ax.plot(yDailyDF['close'],   color= 'blue', alpha=1)
+            ax.plot(yDailyDF['Start'],   color= 'black', alpha=1)
+            
+           
+            # 2nd y axis
+            ##y2ndY=axs[0].twinx()
+            ##y2ndY.plot(yTA1.TAs.index, yTA1.TAs['Shares'],  label=yTA1.symbol+' Shares', color= 'brown')
+            ##y2ndY.set_ylabel("Shares", color="brown")
+
+            ax.legend(loc='upper left')
+            ax.grid()
+                 
+            # save image before the show
+            self.save_plot(yTA1, 'DailyPrice', plt)
+
+
+            # don't show
+            plt.close(fig)
+            # plt.show()
 
     def save_plot(self, yTA1, strategy, plot):
             try:
@@ -560,13 +591,13 @@ class TA1_Plt:
     def plt_all(self, yTA5):
         ##### turn off interactive mode 
         
-        
+        # yTA5 is a TA1 object 
         self.plot_macd(yTA5)
         self.plot_rsi(yTA5)
         self.plot_bollinger_bands(yTA5)
         self.plot_sma(yTA5) 
         self.plot_CmprsdBS(yTA5)
-
+        self.plot_DailyPrice(yTA5)
 #%%
 #############################################################
 #def testrun():

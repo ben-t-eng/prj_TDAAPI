@@ -70,7 +70,9 @@ class Stock:
         self.Broker=''
         self.Shares=0
         
-        self.HistDF=None   #dataframe
+        self.HistDF=None   #dataframe for year log candle data
+        self.DailyDF=None
+        self.FundaDF=None
 
         self.HistStartDate=0 # Epoc second
         self.Price=0
@@ -98,10 +100,11 @@ class Stock:
                                 'MACD':{ 'plt_loc':[]  , "Params":{'Slow_Window':26, 'Fast_Window':12, 'Signal':9}  }, 
                                 'Bollinger_Bands':  { 'plt_loc':[]  , "Params":{'Window':20}   },
                                 'CmprsdBS':{ 'plt_loc':[]  , "Params":{'Date':None} },
-                                'FinViz':{ 'plt_loc':[] , "Params":{'Date':None}}        
+                                'FinViz':{ 'plt_loc':[] , "Params":{'Date':None}},
+                                'DailyPrice': {'plt_loc':[] , "Params":{'Date':None}}       
                                 }
                 }
-        self.CSV_Path=a_Settings.URL_CVS_file
+        self.CSV_Path=a_Settings.URL_CSV_file
         
 
         lgi('Stock initialized')
@@ -153,6 +156,66 @@ class Stock:
             lge (f"failed, check {self.Symbol} or internet connection")
             return 0
 
+    def GetDailyHist(self, Test=0):
+    # get market data
+        #lgd("get symbol market data, ok")
+
+        try: 
+            ySDate=a_utils.epoch_from_today( Yr=0, Mo=0, Day=5)  # so you have enough  
+
+            ###################self.HistDF=a_TDA_IF.TDA_Price_Hist (Symbol=self.Symbol, StartDTStamp=self.HistStartDate, EndDTStamp=self.HistEndDate )
+            #
+            if Test==1 :
+                ##yDF2=pd.read_csv(r"C:\BTFiles\btgithub1b\TDAAPI\HistoricalData\Debug\GOOG_2022_02_20-21_03.csv")
+                yDF2=pd.read_csv(a_Settings.URL_debug_data_file)
+                lgi("--> debug data file used <--" + a_Settings.URL_debug_data_file + "; instead of data from web e.g. TDA and etc." ) 
+            else:
+                yDF2=a_TDA_IF.TDA_Price_Hist_a( Symbol=self.Symbol, yPeriodType='day', yPeriod ='1', yFrequencyType='minute',yFrequency='15' , \
+                StartDTStamp=ySDate, EndDTStamp= a_utils.epoch_from_today( Yr=0, Mo=0, Day=0) , yExtHour='false') 
+                
+                #TDA_Price_Hist ( Symbol=self.Symbol, StartDTStamp=ySDate, EndDTStamp=0 )
+            
+
+            #from TDA ms Timestamp to panda PST time +11 hours, purely for excel table 
+            yTDA2PDBias= 28800000 #ms
+            yTDA2PDBiasDailyQuote= -25200000 #ms
+
+            yDF2['Date']= pd.to_datetime(yDF2['datetime'] + yTDA2PDBiasDailyQuote , unit='ms')
+            yDF2.set_index(keys='Date', inplace=True)
+
+            #https://www.statology.org/pandas-convert-column-to-int/#:~:text=You%20can%20use%20the%20following%20syntax%20to%20convert,Integer%20Suppose%20we%20have%20the%20following%20pandas%20DataFrame%3A
+            yDF2['datetime'] = yDF2['datetime'].astype('int64')  # so you get complete resolution vs 1.649E+12
+
+            self.DailyDF=yDF2
+            #no need and not safe, self.HistDF= yDF2.iloc[:, 1:] #takes out the firstcolumn of serial numbers, 
+            ##############################################
+            # Date (DT index)  symbol     open       high       low    close      SMA1  \
+
+            ##############################################
+
+            lgd( "got quote update, " + str(type(self.DailyDF)) + str(self.DailyDF.shape)) 
+
+            #print (yDF2) 
+
+
+            # save hist in main() after TA1
+            #self.SaveHist() 
+            self.SaveDF(self.DailyDF, a_Settings.URL_CSV_file, self.Symbol, "Daily" )
+
+            return 1
+        except:
+            lge (f"failed, check {self.Symbol} or internet connection")
+            return 0
+
+    def GetFundamental(self, Test=0):
+        try:
+            self.FundaDF=a_TDA_IF.TDA_Get_Instr_Funda (Symbol=self.Symbol)
+            lgw(f"fundamental DF loaded, {self.Symbol}, df shape {self.FundaDF.shape}, addr={a_Settings.URL_Funda_CSV}")
+            self.SaveDF(self.FundaDF, a_Settings.URL_Funda_CSV, self.Symbol, "Fundamental" )
+
+
+        except:
+            lge("failed")
 
     def UpdateTA(self):
         lgd('UpdateTA()')
@@ -547,7 +610,7 @@ class Stock:
 
             cdir=self.Symbol
             #pdir=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
-            pdir=a_Settings.URL_CVS_file
+            pdir=a_Settings.URL_CSV_file
             
             path= a_utils.addDir(pdir, cdir)
 
@@ -557,6 +620,20 @@ class Stock:
         except: 
             lge(" failed ")
 
+    def SaveDF(self, yDF, pathDir, ySymbol, yDetail):
+        try:
+            lgw(f'SaveDF {pathDir},{ySymbol},{yDetail}')
+
+            #pdir=r'C:\Users\bt\Documents\GitHub\SigmaCodingBTC\TDAAPI\historical_data\a_Debug'
+            #pathDir=a_Settings.URL_CSV_file
+            
+            path= a_utils.addDir(pathDir, ySymbol)
+
+            path=a_utils.DF2CSV(yDF, path, ySymbol+"-"+yDetail , '')
+
+            lgw("SaveDF() path:  " + str(path) )
+        except: 
+            lge(" failed ")
 
 
 
@@ -637,6 +714,7 @@ class Stock:
             for yStrategy in self.TA1['Strategies']:
                 try:
                     if yStrategy=="FinViz" : continue 
+                    if yStrategy=="DailyPrice" : continue 
                     lgd(f"strategy: {yStrategy}")
 
                     ySignal=self.HistDF.tail(1)[f'{yStrategy}_Buy'].to_numpy()[-1]

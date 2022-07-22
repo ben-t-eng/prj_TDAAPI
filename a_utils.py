@@ -304,7 +304,7 @@ xLB="\n"
 # testing module codes 
 ################################################
 
-if __name__ == "__main__" : 
+def Test2() : 
     # Epoch number from https://developer.tdameritrade.com/quotes/apis/get/marketdata/%7Bsymbol%7D/quotes
     print ('Quotetimelong:' ,TDAepoch2DT(1652158800000), "; tradetimelong:", TDAepoch2DT(315561600000), "; regularMarketTradeTimeInLong:", TDAepoch2DT(1652212800523)) 
     #Quotetimelong: 2022-05-10 16:58:13.837000 ; 
@@ -312,7 +312,7 @@ if __name__ == "__main__" :
     #regularMarketTradeTimeInLong: 2022-05-10 13:00:00.523000
 
 # %%
-if __name__ == "__main__" : 
+def test1() : 
     yDT=datetime.datetime.now()
     print (f' yDT ={yDT}, tzname= {yDT.tzname}, tzinfo={yDT.tzinfo} ')
     yDT1=yDT.astimezone()  # a    dd tz info to DT object
@@ -320,4 +320,16 @@ if __name__ == "__main__" :
     print (f' yDT1 ={yDT1}, tzname1= {yDT1.tzname}, tzinfo1={yDT1.tzinfo} ')
     print(f'xlocal2UTC= {xL2UTC} , offset={yDT1.utcoffset()}')
    
+# %%
+def t_TDAPI():
+    print(f"epoch time = {epoch_date_stamp( yYr=2022, yMo=5, yDate=10)}")
+
+def test1():
+    print(f"dt = {TDAepoch2DT(1658142000000)}")
+
+# %%
+if __name__ == "__main__" : 
+    #t_TDAPI()
+    test1()
+
 # %%

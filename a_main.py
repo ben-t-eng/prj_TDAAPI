@@ -177,8 +177,17 @@ def mainEntry(only_Selected=0, testrun=1, Clear_Flag=0 ):
 
         ################################################################
         #good
-        
+
+        #clean up all \history entries with "Updating" 
+        I2=yFolder1.Items.Restrict("[Update]='Updating' ")
+        for i in range( I2.Count,1, -1 ):
+            # or use Remove() method
+            #I2(i).Delete() #https://docs.microsoft.com/en-us/office/vba/api/outlook.mailitem.delete
+            I2.Remove(i)
+        lgw(f"{I2.Count} Updating OLI(s) removed")
+
         a_OL_IF.SetOLIUsrPropDir(yOLI,'Update' , 'Updating',1)
+        #save the setting
         yOLI.Close(0)  #w! this is required, or else OLI in \Sec [update] is not set to 'Updating'
 
         yOLI1=yOLI.Copy()
@@ -224,6 +233,9 @@ def mainEntry(only_Selected=0, testrun=1, Clear_Flag=0 ):
         yPlt=a_TA1_Plt.TA1_Plt()    
 
         yO_S.Stock.SaveHist()
+
+        yO_S.Stock.GetFundamental(testrun)
+        yO_S.Stock.GetDailyHist(testrun)
 
         yPlt.plt_all(yTA3)
 
@@ -298,8 +310,9 @@ def mainEntry(only_Selected=0, testrun=1, Clear_Flag=0 ):
             lgw(f" yUpdate time {yUpdateDT} {type(yUpdateDT)}, yLSUpdate {yLSUpdate1} {type(yLSUpdate1)}")
             
             if yLSUpdate2 < yUpdateDT:
-                yOLI.Delete()
+                
                 lgw(f'{yOLI.UserProperties.Find("LSUpdate").Value}, LSUpdate2 < UPdate start    ' )
+                yOLI.Delete()
             else: 
                 a_OL_IF.SetOLIUsrPropDir(yOLI,'Update', ' ',1) 
                 yOLI.Save()
@@ -342,7 +355,7 @@ def mainEntry(only_Selected=0, testrun=1, Clear_Flag=0 ):
 # outlook needs to be running, or else there will be  PRC error 
 if __name__ == "__main__" :
     a=1
-    mainEntry(only_Selected=0, testrun=0) 
+    mainEntry(only_Selected=1, testrun=0) 
 
 
 ###################################################

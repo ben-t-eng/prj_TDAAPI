@@ -529,9 +529,13 @@ def updateSummaryOLI(yDF, yFolder):
         yInsp=None
         
         if yOLI is not null:
+            SetOLIUsrPropDir(yOLI,"LSUpdate" ,datetime.datetime.now(), C.olDateTime)
+            yOLI.Save()
 
             yOLI1=yOLI.Copy()
             yOLI1.Move(yFolder.Folders['History'])
+
+            
 
             # base on updateOLI() above
             yInsp =yOLI.GetInspector  
@@ -562,7 +566,7 @@ def updateSummaryOLI(yDF, yFolder):
             yRng.Collapse(Direction=C.wdCollapseEnd)
 
             #insert table
-            yColumnCount=8
+            yColumnCount=9
             yWDoc.Tables.Add(Range=yRng, NumRows=len(yDF)+1, NumColumns=yColumnCount,
                                 DefaultTableBehavior=C.wdWord9TableBehavior, AutoFitBehavior=C.wdAutoFitFixed)
 
@@ -592,7 +596,7 @@ def updateSummaryOLI(yDF, yFolder):
                 lgd(f" cell [{i+2},1 ] is {yDF1['Symbol'].iloc[i]} ")
                 ##########################################
                 #https://docs.microsoft.com/en-us/office/vba/api/word.cell
-                yRng=yWDTbl.Cell(i+2,2).Range
+                yRng=yWDTbl.Cell(i+2,3).Range
 
                 #lgw(f'yRng is a range 1')
                 #yRng.Collapse(Direction=C.wdCollapseStart)
@@ -638,8 +642,25 @@ def updateSummaryOLI(yDF, yFolder):
                 #? yPic.LockAspectRatio = True
                 #? yPic.Width = InchesToPoints(3)
 
+                 ########################################
+                yRng=yWDTbl.Cell(i+2,2).Range
+                yRng.Collapse(Direction=C.wdCollapseStart)
+                yFPth=yDF1['Link2Plot2'].iloc[i]
+
+                lgd(f" yFilePath : {yFPth} ")
+                yPic=yRng.InlineShapes.AddPicture(yFPth, True, True)
+                yPic.ScaleHeight=40
+                yPic.ScaleWidth=40
+
+
+
+
+
+
+
+
                 ########################################
-                yRng=yWDTbl.Cell(i+2,3).Range
+                yRng=yWDTbl.Cell(i+2,4).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
                 yFlagTxt=f"{yDF1['Flag'].iloc[i]}; "
                 lgd(f" yFlagTxt= {yFlagTxt}")
@@ -665,7 +686,7 @@ def updateSummaryOLI(yDF, yFolder):
                 lgd(" col 4")
 
                 ################################################
-                yRng=yWDTbl.Cell(i+2,4).Range
+                yRng=yWDTbl.Cell(i+2,5).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
 
                 yPChg=yDF1['PriceChg'].iloc[i]
@@ -692,7 +713,7 @@ def updateSummaryOLI(yDF, yFolder):
 
                 ################################################
                 lgd(" col 5")
-                yRng=yWDTbl.Cell(i+2,5).Range
+                yRng=yWDTbl.Cell(i+2,6).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
                 yRng.Text=f"Streak: {yDF1['Streak'].iloc[i]}"
 
@@ -706,7 +727,7 @@ def updateSummaryOLI(yDF, yFolder):
 
                 ################################################
                 lgd("col 6")
-                yRng=yWDTbl.Cell(i+2,6).Range
+                yRng=yWDTbl.Cell(i+2,7).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
                 yRng.Text=f"{yDF1['VolChg'].iloc[i]:.1%}, Volchg; "
 
@@ -729,12 +750,12 @@ def updateSummaryOLI(yDF, yFolder):
 
                 ################################################
                 lgd(" col 7")
-                yRng=yWDTbl.Cell(i+2,7).Range
+                yRng=yWDTbl.Cell(i+2,8).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
                 yRng.Text=f"{yDF1['Sector'].iloc[i]}"
 
                 ################################################
-                yRng=yWDTbl.Cell(i+2,8).Range
+                yRng=yWDTbl.Cell(i+2,9).Range
                 yRng.Collapse(Direction=C.wdCollapseStart)
                 yRng.Text=f"{yDF1['Stage'].iloc[i]}"
 
@@ -745,6 +766,7 @@ def updateSummaryOLI(yDF, yFolder):
     finally:
         a=1
 
+#set it directly
 def SetOLIUsrPropDir(yOLI, Fieldnm, Value, FieldType=1):
         #find field type from here
         # https://docs.microsoft.com/en-us/office/vba/api/outlook.oluserpropertytype

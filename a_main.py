@@ -103,6 +103,7 @@ def genSummaryDF():
           "Shares":[0],
           "Flag":['Flags'], 
           "Link2Plot":['lk1'], 
+          "Link2Plot2":['lk2'], 
           "Link2OLI":['lk2'],
           "Note":['notes'],
           "LSUpdate":[datetime.datetime.now()],
@@ -233,12 +234,14 @@ def mainEntry(only_Selected=0, testrun=1, Clear_Flag=0 ):
         yPlt=a_TA1_Plt.TA1_Plt()    
 
         yO_S.Stock.SaveHist()
+        
 
         yO_S.Stock.GetFundamental(testrun)
         yO_S.Stock.GetDailyHist(testrun)
 
         yPlt.plt_all(yTA3)
 
+        yO_S.Stock.SaveDF( yO_S.Stock.DailyDF, a_Settings.URL_CSV_file,  yO_S.Stock.Symbol, "Daily2" )
     
         #get plot from FinViz.com
         yFV=a_FinViz.FinViz()

@@ -10,6 +10,7 @@ from logging import warning as lgw
 from logging import critical as lgc
 
 from io import StringIO
+import string
 #############
 import sys 
 import datetime
@@ -27,7 +28,7 @@ import talib
 
 #############
 import os
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, ticker
 import numpy as np
 import a_Stock_IF
 
@@ -420,7 +421,7 @@ class TA1_Plt:
                 yYlow,yYheight=axs[0].set_ylim(auto=True)
                 yYlow,yYheight=axs[0].get_ybound()
                 lgd(f" step 2")
-                axs[0].text(x=yDF1["EventDate"].values[i], y=yYlow-10,  s=f"<{i+1}>{yDT}", color='brown',  verticalalignment='bottom', horizontalalignment='left' , rotation=45) # transform=axs[0].transAxes)            
+                axs[0].text(x=yDF1["EventDate"].values[i], y=yYlow*0.9,  s=f"<{i+1}>{yDT}", color='brown',  verticalalignment='bottom', horizontalalignment='left' , rotation=45) # transform=axs[0].transAxes)            
                 lgd(f" step 3")
                # axs[0].text(x=yDF1["EventDate"].values[i], y=yYlow,  s=f"<{i+1}>", color='green', rotation=45)
 
@@ -545,25 +546,74 @@ class TA1_Plt:
             
             
             # Create and plot the graph
-            fig, ax= plt.subplots( figsize=(4,3))
-            
-           #last 26 x 15min = 6 hours 30 min =9:30 am to 4 pm
-            yDailyDF=yTA1.container.DailyDF.tail(26)
-            yStart=yDailyDF["close"].to_numpy()[0]
-            yDailyDF['Start']=yStart
+            fig, ax= plt.subplots( figsize=(5,3))
+            yTA1.container.DailyDF['Date1']=yTA1.container.DailyDF.index
+            yTA1.container.DailyDF['DateStr']=yTA1.container.DailyDF['Date1'].dt.strftime('%m/%d:%H:%M')
+            yTA1.container.DailyDF['TimeStr']=yTA1.container.DailyDF['Date1'].dt.strftime('%H_%M')
+           #last 26 x 15min = 6 hours 30 min =9:30 am to 4 pm trading hours, 7 hr 30minute, 15 x 30 mins
+            ## yTA1.container.DailyDF['Start']=0.0  #add new column
+            yDailyDF=yTA1.container.DailyDF.tail(130)
+            yStart=yTA1.container.DailyDF["close"].to_numpy()[-26]
+            # pyhton warning: yDailyDF.loc[:,'Start']=yStart 
+            yTA1.container.DailyDF['Start']=yStart # last trade day's start price
+            yDailyDF=yTA1.container.DailyDF.tail(130) # get 10 day's of data
+
+            ##w2 yTA1.container.DailyDF.loc[yDailyDF.index.to_numpy(), 'Start']=yStart
+            ##W3, so the whole 'start' column is set, rather than the last 26
+            ####yTA1.container.DailyDF['Start']=yStart    
 
            
-            ax.plot(yDailyDF['close'],   color= 'blue', alpha=1)
-            ax.plot(yDailyDF['Start'],   color= 'black', alpha=1)
+
+            #nW! yNM1=yDailyDF['Date'].to_numpy()
+            # yNM0=yDailyDF.index.to_numpy()
+            #nw!yNM0.astype(np.str)
+            
             
            
+            ##yNM1=np.datetime_as_string(yNM0)
+            yNM1=yDailyDF['DateStr'].to_numpy()
+            lgw(f" np tpye ={yNM1.dtype}")
+            yNM2=yDailyDF['close'].to_numpy()
+            ax.plot(yNM1, yNM2, color= 'blue', alpha=1)
+            ax.text(yNM1[-1],yNM2[-1],  s=f"${yNM2[-1]}", color='blue', 
+                    verticalalignment='top', horizontalalignment='left' , rotation=0)
+            
+            # draw the close price at start of the last trade day
+            yNpA3=yDailyDF['Start'].to_numpy()
+
+            ax.plot(yNM1,yNpA3,color= 'black', alpha=1)
+            ax.text(yNM1[-26],yNpA3[-1],  s=f"${yNpA3[-1]}", color='black', 
+                    verticalalignment='top', horizontalalignment='left' , rotation=0)
+
+            ax.xaxis.set_major_locator(ticker.MaxNLocator(1))
+            ##for label in ax.get_xticklabels():
+            ##    label.set_rotation(0) 
+           
+            #vertical lines for each day
+            #df1.loc[df1['datetime'] > datetime.da
+            yDailyDF1=yTA1.container.DailyDF.tail(130)
+            yDDF1=yDailyDF1.loc[ yDailyDF['TimeStr'] == '06_30']
+
+            for i in range(0, len(yDDF1)):
+                    #yDDF1['DateStr'].iloc[i]
+                    ax.axvline(x=yDDF1["DateStr"].values[i], url= f"{i}",  color='brown', linestyle='--', alpha=1)
+                    yYlow,yYheight=ax.set_ylim(auto=True)
+                    yYlow,yYheight=ax.get_ybound()
+                    lgd(f" step 2")
+                    yDStr=yDDF1["DateStr"].values[i]
+                    ax.text(x=yDStr, y=yYlow,  s=f" {yDStr[0:-6]}", color='brown', 
+                    verticalalignment='bottom', horizontalalignment='left' , rotation=0) # transform=ax.transAxes)            
+                    
+            
+            
+            
             # 2nd y axis
             ##y2ndY=axs[0].twinx()
             ##y2ndY.plot(yTA1.TAs.index, yTA1.TAs['Shares'],  label=yTA1.symbol+' Shares', color= 'brown')
             ##y2ndY.set_ylabel("Shares", color="brown")
 
-            ax.legend(loc='upper left')
-            ax.grid()
+            #ax.legend(loc='upper left')
+            ##ax.grid()
                  
             # save image before the show
             self.save_plot(yTA1, 'DailyPrice', plt)
@@ -604,6 +654,7 @@ class TA1_Plt:
 import a_Stock_IF
 import pandas as pd
 import numpy as np
+import datetime
 
 def test1(): 
     #yYahooDS=  yf.Ticker(yGoog.symbol).history(period='1y')['Close']
@@ -636,11 +687,19 @@ def test1():
 
     ## yPlt.plt_all(yTA)
 
+def testdailyplot():
+    #"C:\BTFiles\btgithub1b\prj_TDAAPI\HistoricalData\Debug\GOOG-Daily2_2022_07_23-11_12.csv"
+    yDF=pd.read_csv(r".\HistoricalData\Debug\GOOG-Daily2_2022_07_23-11_12.csv")
+    yDF['Date']=pd.to_datetime(yDF['Date'])
+    print(f" df type={yDF.info()}")
+    yDF['DateStr']=yDF['Date'].dt.strftime('%m/%d:%H')
 
+    print(f" DF= {yDF}")
 
 # %%
 if __name__ == "__main__" :
-    test1()
+    #test1()
+    testdailyplot()
 
 
 # %%

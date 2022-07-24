@@ -65,12 +65,12 @@ def DF2CSV(PD_DF, path, filenm, tmstr=''):
         tmstr=datetime.datetime.now().strftime("%Y_%m_%d-%H_%M")
 
     filenm1=filenm + '_' + tmstr + '.csv'
-    path=os.path.join(path, filenm1)
+    path1=os.path.join(path, filenm1)
     try:
-        lgd('DF2CSV(): path='+ path)
-        PD_DF.to_csv(path)
+        lgd('DF2CSV(): path='+ path1)
+        PD_DF.to_csv(path1)
     except:
-        lge('DF2CSV() error in writing csv file')
+        lge(f'error, df={PD_DF.shape} path={path}, return={path1}')
     return path
 #
 
@@ -92,9 +92,9 @@ import time
 import datetime
 #https://www.w3schools.com/python/python_datetime.asp
 
-def epoch_date_stamp( yYr=0, yMo=1, yDate=1):
+def epoch_date_stamp( yYr=0, yMo=1, yDate=1, yHr=0, yMin=1):
      if yYr >1980 and yMo >0 and yMo <13 and yDate >0 and yDate<31  :
-         yDate=datetime.datetime(yYr,yMo, yDate)
+         yDate=datetime.datetime(yYr,yMo, yDate, yHr, yMin)
      else :
          yDate=datetime.datetime.now()
 
@@ -322,14 +322,17 @@ def test1() :
    
 # %%
 def t_TDAPI():
-    print(f"epoch time = {epoch_date_stamp( yYr=2022, yMo=5, yDate=10)}")
+    #epoch_date_stamp( yYr=0, yMo=1, yDate=1)
+    print(f"epoch time 1 = {epoch_date_stamp( yYr=2022, yMo=7, yDate=22, yHr=0)}")
+    yToday=datetime.date.today()
+    print(f"epoch time 2 = {epoch_date_stamp( yYr=yToday.year, yMo=yToday.month, yDate=yToday.day, yHr=23)}")
 
 def test1():
     print(f"dt = {TDAepoch2DT(1658142000000)}")
 
 # %%
 if __name__ == "__main__" : 
-    #t_TDAPI()
-    test1()
+    t_TDAPI()
+    #test1()
 
 # %%
